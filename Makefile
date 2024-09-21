@@ -30,7 +30,7 @@ migrate-force:
 	migrate -path migrations -database $(DB_URL) -verbose force 1
 
 migrate-file:
-	migrate create -ext sql -dir migrations/ -seq create_auth_service_table
+	migrate create -ext sql -dir migrations/ -seq carpet_wash
 
 
 pull-proto-module:
