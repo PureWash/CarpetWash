@@ -25,6 +25,7 @@ const _ = grpc.SupportPackageIsVersion7
 type OrderServiceClient interface {
 	CreateOrder(ctx context.Context, in *OrderRequest, opts ...grpc.CallOption) (*Order, error)
 	UpdateOrder(ctx context.Context, in *Order, opts ...grpc.CallOption) (*Order, error)
+	UpdateOrderWithUser(ctx context.Context, in *Order, opts ...grpc.CallOption) (*Order, error)
 	DeleteOrder(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*empty.Empty, error)
 	GetOrder(ctx context.Context, in *PrimaryKey, opts ...grpc.CallOption) (*Order, error)
 	GetAllOrder(ctx context.Context, in *GetListRequest, opts ...grpc.CallOption) (*OrdersResponse, error)
@@ -50,6 +51,15 @@ func (c *orderServiceClient) CreateOrder(ctx context.Context, in *OrderRequest, 
 func (c *orderServiceClient) UpdateOrder(ctx context.Context, in *Order, opts ...grpc.CallOption) (*Order, error) {
 	out := new(Order)
 	err := c.cc.Invoke(ctx, "/carpet_wash_service.OrderService/UpdateOrder", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) UpdateOrderWithUser(ctx context.Context, in *Order, opts ...grpc.CallOption) (*Order, error) {
+	out := new(Order)
+	err := c.cc.Invoke(ctx, "/carpet_wash_service.OrderService/UpdateOrderWithUser", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +99,7 @@ func (c *orderServiceClient) GetAllOrder(ctx context.Context, in *GetListRequest
 type OrderServiceServer interface {
 	CreateOrder(context.Context, *OrderRequest) (*Order, error)
 	UpdateOrder(context.Context, *Order) (*Order, error)
+	UpdateOrderWithUser(context.Context, *Order) (*Order, error)
 	DeleteOrder(context.Context, *PrimaryKey) (*empty.Empty, error)
 	GetOrder(context.Context, *PrimaryKey) (*Order, error)
 	GetAllOrder(context.Context, *GetListRequest) (*OrdersResponse, error)
@@ -104,6 +115,9 @@ func (UnimplementedOrderServiceServer) CreateOrder(context.Context, *OrderReques
 }
 func (UnimplementedOrderServiceServer) UpdateOrder(context.Context, *Order) (*Order, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrder not implemented")
+}
+func (UnimplementedOrderServiceServer) UpdateOrderWithUser(context.Context, *Order) (*Order, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrderWithUser not implemented")
 }
 func (UnimplementedOrderServiceServer) DeleteOrder(context.Context, *PrimaryKey) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteOrder not implemented")
@@ -159,6 +173,24 @@ func _OrderService_UpdateOrder_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OrderServiceServer).UpdateOrder(ctx, req.(*Order))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_UpdateOrderWithUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Order)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).UpdateOrderWithUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/carpet_wash_service.OrderService/UpdateOrderWithUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).UpdateOrderWithUser(ctx, req.(*Order))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -231,6 +263,10 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateOrder",
 			Handler:    _OrderService_UpdateOrder_Handler,
+		},
+		{
+			MethodName: "UpdateOrderWithUser",
+			Handler:    _OrderService_UpdateOrderWithUser_Handler,
 		},
 		{
 			MethodName: "DeleteOrder",
