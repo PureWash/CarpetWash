@@ -4,7 +4,6 @@ go 1.22.1
 
 require (
 	github.com/golang/protobuf v1.5.0
-	github.com/google/uuid v1.6.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/jackc/pgx/v5 v5.7.1

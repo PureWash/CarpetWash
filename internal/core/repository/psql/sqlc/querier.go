@@ -7,7 +7,7 @@ import (
 
 type Querier interface {
 	InsertCompany(ctx context.Context, req *pb.CompanyRequest) (*pb.Company, error)
-	// InsertService(ctx context.Context, req *pb.ServiceRequest) (*pb.Service, error)
+	InsertService(ctx context.Context, req *pb.ServiceRequest) (*pb.Service, error)
 	// InsertAddress(ctx context.Context, req *pb.AddressRequest) (*pb.Address, error)
 	// InsertOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Order, error)
 	// UpdateCompany(ctx context.Context, req *pb.Company) (*pb.Company, error)
