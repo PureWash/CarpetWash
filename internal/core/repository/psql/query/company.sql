@@ -37,13 +37,5 @@ WHERE
 AND 
     deleted_at = '1'
 
---name: SelectCompanys :exec
-SELECT
-    id,
-    name, 
-    description, 
-    created_at, 
-    updated_at
-FROM
 
 
