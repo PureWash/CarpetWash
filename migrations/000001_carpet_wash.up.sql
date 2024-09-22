@@ -3,16 +3,16 @@ CREATE Table company (
   name VARCHAR(100) NOT NULL,
   description TEXT,
   created_at TIMESTAMP default CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP
+  updated_at TIMESTAMP,
+  deleted_at int DEFAULT 1     --0 bo'lsa o'chirilgan bo'ladi
 );
 
 
 CREATE Table services (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uui  d(),
   tariffs  text,
-  company_id INT not null,
   name VARCHAR(100) not null,
-  description TEXT,
+  description TEXT,  
   price DECIMAL(10,2)
 );
 
@@ -22,7 +22,8 @@ CREATE Table addresses (
   latitude DECIMAL(9,6),
   longitude DECIMAL(9,6),
   created_at TIMESTAMP default CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP
+  updated_at TIMESTAMP,
+  deleted_at int  DEFAULT 1      --0 bo'lsa o'chirilgan bo'ladi
 );
 
 CREATE Table orders (
@@ -30,5 +31,11 @@ CREATE Table orders (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   service_id UUID REFERENCES services(id) ON DELETE CASCADE,
   address_id UUID REFERENCES addresses(id) ON DELETE CASCADE,
-  created_at timestamp default CURREENT_TIMESTAMP
+  area float NOT NULL,
+  total_price float, 
+  status VARCHAR(50),
+  created_at TIMESTAMP default CURREENT_TIMESTAMP,
+  updated_at TIMESTAMP,
+  deleted_at int DEFAULT 1   --0 bo'lsa o'chirilgan bo'ladi 
 );
+
