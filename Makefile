@@ -40,3 +40,6 @@ update-proto-module:
 	git submodule update --remote --merge
 swag-init:
 	swag init -g api/router.go -o api/docs
+
+sqlc-generate:
+	sqlc vet ; sqlc generate  
