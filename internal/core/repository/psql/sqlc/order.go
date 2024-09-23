@@ -108,7 +108,7 @@ const UpdateOrderWithUser = `--name: UpdateOrderThisUser :exec
 	RETURNING id, user_id, service_id, address_id, area, total_price, status, created_at
 `
 
-func (q *Queries) UpdateOrderWithOrder(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+func (q *Queries) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
 	row := q.db.QueryRow(ctx, UpdateOrderWithUser,
 		req.ServiceId,
 		req.Area,

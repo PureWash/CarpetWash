@@ -24,7 +24,7 @@ UPDATE
     orders
 SET 
     service_id = $1,
-    area = $2
+    area = $2,
     updated_at = $3
 WHERE
     id = $4
