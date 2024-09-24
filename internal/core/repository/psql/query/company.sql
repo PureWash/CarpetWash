@@ -1,21 +1,18 @@
 --name: InsertCompany :exec
-INSERT INTO company(name, description, logo_url, created_at)
-VALUES($1, $2, $3, $4)
-RETURNING id, name, description, logo_url, created_at
+INSERT INTO company(name, description, created_at)
+VALUES($1, $2, $3)
+RETURNING id, name, description, created_at
 
 --name: UpdateCompany :exec
-	UPDATE 
-	    company
-	SET
-	    name = $1,
-	    description = $2,
-	    logo_url = $3
-		updated_at = $4
-	WHERE
-	    id = $5
-	AND 
-	    deleted_at = '1'
-	RETURNING id, name, description, logo_url, created_at
+UPDATE 
+    company
+SET
+    name = $1,
+    description = $2
+WHERE
+    id = $3
+AND 
+    deleted_at = '1'
 
 
 --name: DeleteCompany :exec
@@ -30,8 +27,7 @@ WHERE
 SELECT  
     id,
     name, 
-    description,
-    logo_url, 
+    description, 
     created_at, 
     updated_at
 FROM 
@@ -41,5 +37,5 @@ WHERE
 AND 
     deleted_at = '1'
 
-    
+
 
