@@ -169,7 +169,7 @@ const SelectOrderQuery = `--name: SelectOrder :exec
 
 func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Order, error) {
 	row := q.db.QueryRow(ctx, SelectOrderQuery, req.Id)
-
+	
 	if err = row.Scan(
 		&res.Id,
 		&res.UserId,

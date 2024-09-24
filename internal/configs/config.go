@@ -9,6 +9,10 @@ import (
 )
 
 type Config struct {
+	ServiceName string
+	Environment string
+	LoggerLevel string
+
 	HTTPPort string
 
 	PostrgresHost    string
@@ -16,6 +20,9 @@ type Config struct {
 	PostgresUser     string
 	PostgresPassword string
 	PostgresDatabase string
+
+	GrpcHost string
+	GrpcPort string
 }
 
 func Load() Config {
@@ -31,6 +38,10 @@ func Load() Config {
 	config.PostgresUser = cast.ToString(coalesce("POSTGRES_USER", "postgres"))
 	config.PostgresPassword = cast.ToString(coalesce("POSTGRES_PASSWORD", "3333"))
 	config.PostgresDatabase = cast.ToString(coalesce("POSTGRES_DATABASE", "carpetwash_service"))
+
+	config.GrpcHost = cast.ToString(coalesce("SALE_SERVICE_GRPC_HOST", "localhost"))
+	config.GrpcPort = cast.ToString(coalesce("SALE_SERVICE_GRPC_PORT", ":8082"))
+
 
 	return config
 }

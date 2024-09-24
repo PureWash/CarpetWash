@@ -3,12 +3,19 @@ package grpcConn
 import (
 	carPet "carpet/genproto/pure_wash"
 	"carpet/internal/core/repository/psql/sqlc"
+	service2 "carpet/internal/core/service"
+	"carpet/internal/pkg/logger"
 
 	"google.golang.org/grpc"
 )
 
-func ConnGRPC(storega *sqlc.Querier) {
+func ConnGRPC(storage sqlc.Querier, log logger.ILogger) *grpc.Server {
 	grpcServer := grpc.NewServer()
 
-	carPet.RegisterAddressesServer(grpcServer, )
+	carPet.RegisterAddressesServer(grpcServer, service2.NewAddress(storage.Address(), log))
+	carPet.RegisterCompanyServiceServer(grpcServer, service2.NewCompany(storage.Company(), log))
+	carPet.RegisterOrderServiceServer(grpcServer, service2.NewOrder(storage.Order(), log))
+	carPet.RegisterServiceServiceServer(grpcServer, service2.NewService(storage.Service(), log))
+
+	return grpcServer
 }
