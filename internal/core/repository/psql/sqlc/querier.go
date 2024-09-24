@@ -16,7 +16,7 @@ type Querier interface {
 	// UpdateService(ctx context.Context, req *pb.Service) (*pb.Service, error)
 	// UpdateAddress(ctx context.Context, req *pb.Address) (*pb.Address, error)
 	UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, error)
-	UpdateOrderWithOrder(ctx context.Context, req *pb.Order) (*pb.Order, error)
+	UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error)
 	DeleteCompany(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error)
 	// DeleteService(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error)
 	// DeleteAddress(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error)
