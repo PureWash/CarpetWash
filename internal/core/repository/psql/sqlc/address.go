@@ -62,9 +62,10 @@ UPDATE
 SET
     user_id = $1,
     latitude = $2,
-    longitude = $3
+    longitude = $3,
+    updated_at=$4
 WHERE
-    id = $4 
+    id = $5 
 AND
     deleted_at = '1'
 RETURNING id,user_id,latitude,longitude,updated_at

@@ -26,7 +26,7 @@ type Config struct {
 }
 
 func Load() Config {
-	if err := godotenv.Load(); err != nil{
+	if err := godotenv.Load(); err != nil {
 		fmt.Println("No .env file found")
 	}
 	config := Config{}
@@ -37,11 +37,10 @@ func Load() Config {
 	config.PostrgresPort = cast.ToInt(coalesce("POSTGRES_PORT", 5432))
 	config.PostgresUser = cast.ToString(coalesce("POSTGRES_USER", "postgres"))
 	config.PostgresPassword = cast.ToString(coalesce("POSTGRES_PASSWORD", "3333"))
-	config.PostgresDatabase = cast.ToString(coalesce("POSTGRES_DATABASE", "carpetwash_service"))
+	config.PostgresDatabase = cast.ToString(coalesce("POSTGRES_DATABASE", "pure_wash"))
 
 	config.GrpcHost = cast.ToString(coalesce("SALE_SERVICE_GRPC_HOST", "localhost"))
 	config.GrpcPort = cast.ToString(coalesce("SALE_SERVICE_GRPC_PORT", ":8082"))
-
 
 	return config
 }

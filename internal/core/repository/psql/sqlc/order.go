@@ -19,8 +19,8 @@ import (
 const InsertOrderQuery = `--name: InsertOrder :exec
 	INSERT INTO orders
 	(user_id, service_id, area, total_price, status, created_at)
-	VALUES($1, $2, $3, $4, $5, $6, $7)
-	RETURNING id, user_id, service_id, address_id, area, total_price, status, created_at
+	VALUES($1, $2, $3, $4, $5, $6)
+	RETURNING id, user_id, service_id,  area, total_price, status, created_at
 `
 
 func (q *Queries) InsertOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Order, error) {
@@ -69,7 +69,7 @@ const UpdateOrderWithAdmin = `--name: UpdateOrderThisAdmin :exec
 	    id = $5
 	AND
 	    deleted_at = '1'
-	RETURNING id, user_id, service_id, address_id, area, total_price, status, created_at
+	RETURNING id, user_id, service_id, area, total_price, status, created_at
 `
 
 func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, error) {
@@ -77,7 +77,6 @@ func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, er
 		res        pb.Order
 		err        error
 		createScan sql.NullTime
-		updateScan sql.NullTime
 		// resps *pb.OrdersResponse
 		// count int64
 	)
@@ -96,7 +95,6 @@ func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, er
 		&res.TotalPrice,
 		&res.Status,
 		&createScan,
-		&updateScan,
 	); err != nil {
 		return nil, err
 	}
@@ -108,52 +106,52 @@ func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, er
 	return &res, nil
 }
 
-const UpdateOrderWithUser = `--name: UpdateOrderThisUser :exec
-	UPDATE
-	    orders
-	SET 
-	    service_id = $1,
-	    area = $2
-	    updated_at = $3
-	WHERE
-	    id = $4
-	AND
-	    deleted_at = '1'
-	RETURNING id, user_id, service_id, address_id, area, total_price, status, created_at
-`
-
-func (q *Queries) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
-	var (
-		res        pb.Order
-		err        error
-		createScan sql.NullTime
-		// updateScan sql.NullTime
-		// resps *pb.OrdersResponse
-		// count int64
-	)
-	row := q.db.QueryRow(ctx, UpdateOrderWithUser,
-		req.ServiceId,
-		req.Area,
-		time.Now(),
-	)
-
-	if err = row.Scan(
-		&res.Id,
-		&res.UserId,
-		&res.ServiceId,
-		&res.Area,
-		&res.TotalPrice,
-		&res.Status,
-		&createScan,
-	); err != nil {
-		return nil, err
-	}
-
-	if createScan.Valid {
-		res.CreatedAt = createScan.Time.Format(configs.Layout)
-	}
-	return &res, nil
-}
+//const UpdateOrderWithUser = `--name: UpdateOrderThisUser :exec
+//	UPDATE
+//	    orders
+//	SET
+//	    service_id = $1,
+//	    area = $2
+//	    updated_at = $3
+//	WHERE
+//	    id = $4
+//	AND
+//	    deleted_at = '1'
+//	RETURNING id, user_id, service_id, area, total_price, status, created_at
+//`
+//
+//func (q *Queries) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+//	var (
+//		res        pb.Order
+//		err        error
+//		createScan sql.NullTime
+//		// updateScan sql.NullTime
+//		// resps *pb.OrdersResponse
+//		// count int64
+//	)
+//	row := q.db.QueryRow(ctx, UpdateOrderWithUser,
+//		req.ServiceId,
+//		req.Area,
+//		time.Now(),
+//	)
+//
+//	if err = row.Scan(
+//		&res.Id,
+//		&res.UserId,
+//		&res.ServiceId,
+//		&res.Area,
+//		&res.TotalPrice,
+//		&res.Status,
+//		&createScan,
+//	); err != nil {
+//		return nil, err
+//	}
+//
+//	if createScan.Valid {
+//		res.CreatedAt = createScan.Time.Format(configs.Layout)
+//	}
+//	return &res, nil
+//}
 
 const DeleteOrderQuery = `--name: DeleteORder :exec
 	UPDATE
@@ -183,7 +181,7 @@ const SelectOrderQuery = `--name: SelectOrder :exec
 	    area,
 	    total_price,
 	    status,
-	    created_at, 
+	    created_at
 	FROM    
 	    orders
 	WHERE
@@ -194,8 +192,8 @@ const SelectOrderQuery = `--name: SelectOrder :exec
 
 func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Order, error) {
 	var (
-		res pb.Order
-		err error
+		res        pb.Order
+		err        error
 		createScan sql.NullTime
 		// updateScan sql.NullTime
 	)
@@ -227,20 +225,19 @@ const SelectOrdersQuery = `--name: SelectOrders :many
 	    area,
 	    total_price,
 	    status,
-	    created_at, 
-	    updated_at
+	    created_at
 	FROM
 	    orders
 	WHERE   
-	    id ILIKE $1
+	    id::text ILIKE $1
 	OR
-	    user_id ILIKE $1
+	    user_id::text ILIKE $1
 	OR
-	    service_id ILIKE $1
+	    service_id::text ILIKE $1
 	OR
 	    status ILIKE $1
 	OR
-	    total_price ILIKE $1
+	    total_price::text ILIKE $1
 	AND
 	    deleted_at = '1'
 	LIMIT $2 OFFSET $3
@@ -256,13 +253,13 @@ const OrderCount = `--name: OrderCount :exec
 
 func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.OrdersResponse, error) {
 	var (
-		res   pb.Order
-		resps pb.OrdersResponse
-		count int64
+		res        pb.Order
+		resps      pb.OrdersResponse
+		count      int64
 		createScan sql.NullTime
 	)
 
-	rows, err := q.db.Query(ctx, SelectOrdersQuery, req.Limit, req.Page, req.Search)
+	rows, err := q.db.Query(ctx, SelectOrdersQuery, req.Search, req.Limit, req.Page)
 	if err != nil {
 		return nil, err
 	}

@@ -44,16 +44,16 @@ func (s *Order) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, erro
 	return res, nil
 }
 
-func (s *Order) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
-	s.log.Info("Update Order with user successfully")
-	res, err := s.storage.UpdateOrderWithUser(ctx, req)
-	if err != nil {
-		s.log.Error("Update Order with user error", logger.Error(err))
-		return nil, err
-	}
-	s.log.Info("Success Order service")
-	return res, nil
-}
+//func (s *Order) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+//	s.log.Info("Update Order with user successfully")
+//	res, err := s.storage.UpdateOrderWithUser(ctx, req)
+//	if err != nil {
+//		s.log.Error("Update Order with user error", logger.Error(err))
+//		return nil, err
+//	}
+//	s.log.Info("Success Order service")
+//	return res, nil
+//}
 
 func (s *Order) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*empty.Empty, error) {
 	s.log.Info("Delete Order successfully")

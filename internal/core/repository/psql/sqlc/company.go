@@ -13,7 +13,7 @@ import (
 const InsertCompanyQuery = `--name: InsertCompany :exec
 	INSERT INTO company(name, description, logo_url, created_at)
 	VALUES($1, $2, $3, $4)
-	RETURNING id, name, description, logo_url, created_at
+	RETURNING id, name, description, logo_url, created_at,updated_at
 `
 
 func (q *Queries) InsertCompany(ctx context.Context, req *pb.CompanyRequest) (*pb.Company, error) {
@@ -53,13 +53,13 @@ const UpdateCompanyQuery = `--name: UpdateCompany :exec
 	SET
 	    name = $1,
 	    description = $2,
-	    logo_url = $3
+	    logo_url = $3,
 		updated_at = $4
 	WHERE
 	    id = $5
 	AND 
 	    deleted_at = '1'
-	RETURNING id, name, description, logo_url, created_at
+	RETURNING id, name, description, logo_url, created_at,updated_at
 `
 
 func (q *Queries) UpdateCompany(ctx context.Context, req *pb.Company) (*pb.Company, error) {
