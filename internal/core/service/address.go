@@ -2,13 +2,27 @@ package service
 
 import (
 	pb "carpet/genproto/pure_wash"
+	"carpet/internal/core/repository/psql/sqlc"
 	"carpet/internal/pkg/logger"
 	"context"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (s *Service) InsertAddress(ctx context.Context, req *pb.AddressRequest) (*pb.Address, error) {
+type Address struct {
+	storage sqlc.Address
+	log     logger.ILogger
+	pb.UnimplementedAddressesServer
+}
+
+func NewAddress(storage sqlc.Address, log logger.ILogger) *Address {
+	return &Address{
+		storage: storage,
+		log:     log,
+	}
+}
+
+func (s *Address) InsertAddress(ctx context.Context, req *pb.AddressRequest) (*pb.Address, error) {
 	s.log.Info("Insert address successfully")
 	res, err := s.storage.InsertAddress(ctx, req)
 	if err != nil {
@@ -19,7 +33,7 @@ func (s *Service) InsertAddress(ctx context.Context, req *pb.AddressRequest) (*p
 	return res, nil
 }
 
-func (s *Service) UpdateAddress(ctx context.Context, req *pb.Address) (*pb.Address, error) {
+func (s *Address) UpdateAddress(ctx context.Context, req *pb.Address) (*pb.Address, error) {
 	s.log.Info("Update address successfully")
 	res, err := s.storage.UpdateAddress(ctx, req)
 	if err != nil {
@@ -30,7 +44,7 @@ func (s *Service) UpdateAddress(ctx context.Context, req *pb.Address) (*pb.Addre
 	return res, nil
 }
 
-func (s *Service) DeleteAddress(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
+func (s *Address) DeleteAddress(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
 	s.log.Info("Delete address successfully")
 	res, err := s.storage.DeleteAddress(ctx, req)
 	if err != nil {
@@ -41,7 +55,7 @@ func (s *Service) DeleteAddress(ctx context.Context, req *pb.PrimaryKey) (*empty
 	return res, nil
 }
 
-func (s *Service) SelectAddress(ctx context.Context, req *pb.PrimaryKey) (*pb.Address, error) {
+func (s *Address) SelectAddress(ctx context.Context, req *pb.PrimaryKey) (*pb.Address, error) {
 	s.log.Info("Select address successfully")
 	res, err := s.storage.SelectAddress(ctx, req)
 	if err != nil {

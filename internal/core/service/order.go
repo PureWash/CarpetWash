@@ -2,13 +2,27 @@ package service
 
 import (
 	pb "carpet/genproto/pure_wash"
+	"carpet/internal/core/repository/psql/sqlc"
 	"carpet/internal/pkg/logger"
 	"context"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (s *Service) InsertOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Order, error) {
+type Order struct {
+	storage sqlc.Order
+	log     logger.ILogger
+	pb.UnimplementedOrderServiceServer
+}
+
+func NewOrder(storage sqlc.Order, log logger.ILogger) *Order {
+	return &Order{
+		storage: storage,
+		log:     log,
+	}
+}
+
+func (s *Order) InsertOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Order, error) {
 	s.log.Info("Insert Order successfully")
 	res, err := s.storage.InsertOrder(ctx, req)
 	if err != nil {
@@ -19,7 +33,7 @@ func (s *Service) InsertOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Or
 	return res, nil
 }
 
-func (s *Service) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+func (s *Order) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, error) {
 	s.log.Info("Update Order successfully")
 	res, err := s.storage.UpdateOrder(ctx, req)
 	if err != nil {
@@ -30,7 +44,7 @@ func (s *Service) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, er
 	return res, nil
 }
 
-func (s *Service) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+func (s *Order) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
 	s.log.Info("Update Order with user successfully")
 	res, err := s.storage.UpdateOrderWithUser(ctx, req)
 	if err != nil {
@@ -41,7 +55,7 @@ func (s *Service) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.O
 	return res, nil
 }
 
-func (s *Service) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
+func (s *Order) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
 	s.log.Info("Delete Order successfully")
 	res, err := s.storage.DeleteOrder(ctx, req)
 	if err != nil {
@@ -52,7 +66,7 @@ func (s *Service) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*emptypb
 	return res, nil
 }
 
-func (s *Service) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Order, error) {
+func (s *Order) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Order, error) {
 	s.log.Info("Select Order successfully")
 	res, err := s.storage.SelectOrder(ctx, req)
 	if err != nil {
@@ -63,7 +77,7 @@ func (s *Service) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Orde
 	return res, nil
 }
 
-func (s *Service) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.OrdersResponse, error) {
+func (s *Order) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.OrdersResponse, error) {
 	s.log.Info("Select Orders successfully")
 	res, err := s.storage.SelectOrders(ctx, req)
 	if err != nil {
