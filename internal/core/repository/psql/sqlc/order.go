@@ -4,16 +4,17 @@ import (
 	pb "carpet/genproto/carpet_service"
 	"carpet/internal/configs"
 	"context"
+	"database/sql"
 	"time"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var (
-	res   *pb.Order
-	resps *pb.OrdersResponse
-	count int64
-)
+// var (
+// 	res   *pb.Order
+// 	resps *pb.OrdersResponse
+// 	count int64
+// )
 
 const InsertOrderQuery = `--name: InsertOrder :exec
 	INSERT INTO orders
@@ -23,6 +24,11 @@ const InsertOrderQuery = `--name: InsertOrder :exec
 `
 
 func (q *Queries) InsertOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Order, error) {
+	var (
+		res        pb.Order
+		err        error
+		createScan sql.NullTime
+	)
 	row := q.db.QueryRow(ctx, InsertOrderQuery,
 		req.UserId,
 		req.ServiceId,
@@ -48,7 +54,7 @@ func (q *Queries) InsertOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Or
 		res.CreatedAt = createScan.Time.Format(configs.Layout)
 	}
 
-	return res, nil
+	return &res, nil
 }
 
 const UpdateOrderWithAdmin = `--name: UpdateOrderThisAdmin :exec 
@@ -67,6 +73,14 @@ const UpdateOrderWithAdmin = `--name: UpdateOrderThisAdmin :exec
 `
 
 func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+	var (
+		res        pb.Order
+		err        error
+		createScan sql.NullTime
+		updateScan sql.NullTime
+		// resps *pb.OrdersResponse
+		// count int64
+	)
 	row := q.db.QueryRow(ctx, UpdateOrderWithAdmin,
 		req.ServiceId,
 		req.Area,
@@ -91,7 +105,7 @@ func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, er
 		res.CreatedAt = createScan.Time.Format(configs.Layout)
 	}
 
-	return res, nil
+	return &res, nil
 }
 
 const UpdateOrderWithUser = `--name: UpdateOrderThisUser :exec
@@ -109,6 +123,14 @@ const UpdateOrderWithUser = `--name: UpdateOrderThisUser :exec
 `
 
 func (q *Queries) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+	var (
+		res        pb.Order
+		err        error
+		createScan sql.NullTime
+		// updateScan sql.NullTime
+		// resps *pb.OrdersResponse
+		// count int64
+	)
 	row := q.db.QueryRow(ctx, UpdateOrderWithUser,
 		req.ServiceId,
 		req.Area,
@@ -130,7 +152,7 @@ func (q *Queries) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.O
 	if createScan.Valid {
 		res.CreatedAt = createScan.Time.Format(configs.Layout)
 	}
-	return res, nil
+	return &res, nil
 }
 
 const DeleteOrderQuery = `--name: DeleteORder :exec
@@ -143,6 +165,9 @@ const DeleteOrderQuery = `--name: DeleteORder :exec
 `
 
 func (q *Queries) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
+	var (
+		err error
+	)
 	_, err = q.db.Exec(ctx, DeleteCompanyQuery, req.Id)
 	if err != nil {
 		return nil, err
@@ -168,8 +193,14 @@ const SelectOrderQuery = `--name: SelectOrder :exec
 `
 
 func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Order, error) {
+	var (
+		res pb.Order
+		err error
+		createScan sql.NullTime
+		// updateScan sql.NullTime
+	)
 	row := q.db.QueryRow(ctx, SelectOrderQuery, req.Id)
-	
+
 	if err = row.Scan(
 		&res.Id,
 		&res.UserId,
@@ -185,7 +216,7 @@ func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Orde
 	if createScan.Valid {
 		res.CreatedAt = createScan.Time.Format(configs.Layout)
 	}
-	return res, nil
+	return &res, nil
 }
 
 const SelectOrdersQuery = `--name: SelectOrders :many
@@ -224,6 +255,13 @@ const OrderCount = `--name: OrderCount :exec
 	`
 
 func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.OrdersResponse, error) {
+	var (
+		res   pb.Order
+		resps pb.OrdersResponse
+		count int64
+		createScan sql.NullTime
+	)
+
 	rows, err := q.db.Query(ctx, SelectOrdersQuery, req.Limit, req.Page, req.Search)
 	if err != nil {
 		return nil, err
@@ -246,7 +284,7 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 			res.CreatedAt = createScan.Time.Format(configs.Layout)
 		}
 
-		resps.Orders = append(resps.Orders, res)
+		resps.Orders = append(resps.Orders, &res)
 	}
 
 	r := q.db.QueryRow(ctx, OrderCount)

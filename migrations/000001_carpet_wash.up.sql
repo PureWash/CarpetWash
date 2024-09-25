@@ -18,17 +18,17 @@ CREATE Table services (
 
 CREATE Table addresses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  latitude DECIMAL(9,6),
-  longitude DECIMAL(9,6),
+  user_id UUID,
+  latitude VARCHAR(100) not null,
+  longitude VARCHAR(100) not null,
   created_at TIMESTAMP default CURRENT_TIMESTAMP,
   updated_at TIMESTAMP
 );
 
 CREATE Table orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID ,
   service_id UUID REFERENCES services(id) ON DELETE CASCADE,
   address_id UUID REFERENCES addresses(id) ON DELETE CASCADE,
-  created_at timestamp default CURREENT_TIMESTAMP
+  created_at TIMESTAMP default CURRENT_TIMESTAMP
 );

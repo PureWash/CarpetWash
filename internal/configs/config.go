@@ -31,7 +31,7 @@ func Load() Config {
 	}
 	config := Config{}
 
-	config.HTTPPort = cast.ToString(coalesce("HTTP_Port", ":8082"))
+	config.HTTPPort = cast.ToString(coalesce("HTTP_Port", ":8089"))
 
 	config.PostrgresHost = cast.ToString(coalesce("POSTGRES_HOST", "localhost"))
 	config.PostrgresPort = cast.ToInt(coalesce("POSTGRES_PORT", 5432))

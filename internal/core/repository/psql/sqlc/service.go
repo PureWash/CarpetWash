@@ -10,14 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var (
-	responses   *pb.Service
-	resp        *pb.ServicesResponse
-	errs        error
-	createScann sql.NullTime
-	updateScann sql.NullTime
-)
-
 const InsertServiceQuery = `--name InsertService :exec
 INSERT INTO service(tariffs, name, description,price,created_at)
 VALUES($1,$2,$3,$4,$5)
@@ -25,6 +17,12 @@ RETURNING  id,tariffs,name,description,price,created_at
 `
 
 func (q *Queries) InsertService(ctx context.Context, req *pb.ServiceRequest) (*pb.Service, error) {
+	var (
+		responses  pb.Service
+		err        error
+		createScan sql.NullTime
+		updateScan sql.NullTime
+	)
 	row := q.db.QueryRow(ctx, InsertServiceQuery, req.Tariffs, req.Name, req.Description, req.Price, time.Now())
 
 	if err = row.Scan(
@@ -45,7 +43,7 @@ func (q *Queries) InsertService(ctx context.Context, req *pb.ServiceRequest) (*p
 
 		responses.UpdatedAt = updateScan.Time.Format(configs.Layout)
 	}
-	return responses, err
+	return &responses, err
 }
 
 const UpdateServiceQuery = `--name UpdateService :exec
@@ -64,6 +62,12 @@ RETURNING id,tariffs,name,description,price,updated_at
 `
 
 func (q *Queries) UpdateService(ctx context.Context, req *pb.Service) (*pb.Service, error) {
+	var (
+		responses pb.Service
+		err       error
+		// createScan sql.NullTime
+		updateScan sql.NullTime
+	)
 	row := q.db.QueryRow(ctx, UpdateServiceQuery,
 		req.Tariffs,
 		req.Name,
@@ -86,7 +90,7 @@ func (q *Queries) UpdateService(ctx context.Context, req *pb.Service) (*pb.Servi
 
 		responses.UpdatedAt = updateScan.Time.Format(configs.Layout)
 	}
-	return responses, err
+	return &responses, err
 }
 
 const DeleteServiceQuery = `--name DeleteService :exec
@@ -99,6 +103,9 @@ WHERE
 `
 
 func (q *Queries) DeleteService(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
+	var (
+		err error
+	)
 	_, err = q.db.Exec(ctx, DeleteServiceQuery, req.Id)
 	if err != nil {
 		return nil, err
@@ -124,6 +131,12 @@ AND
 `
 
 func (q *Queries) SelectService(ctx context.Context, req *pb.PrimaryKey) (*pb.Service, error) {
+	var (
+		responses  pb.Service
+		err        error
+		createScan sql.NullTime
+		updateScan sql.NullTime
+	)
 	row := q.db.QueryRow(ctx, SelectServiceQuery, req.Id)
 
 	if err = row.Scan(
@@ -144,7 +157,7 @@ func (q *Queries) SelectService(ctx context.Context, req *pb.PrimaryKey) (*pb.Se
 
 		responses.UpdatedAt = updateScan.Time.Format(configs.Layout)
 	}
-	return responses, err
+	return &responses, err
 }
 
 const SelectServicesQuery = `--name SelectServices
@@ -177,6 +190,13 @@ AND
 `
 
 func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
+	var (
+		responses  pb.Service
+		err        error
+		createScan sql.NullTime
+		resp        pb.ServicesResponse
+		// updateScan sql.NullTime
+	)
 	rows, err := q.db.Query(ctx, SelectServicesQuery, req.Limit, req.Page, req.Search)
 	if err != nil {
 		return nil, err
@@ -195,7 +215,7 @@ func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*
 		if createScan.Valid {
 			responses.CreatedAt = createScan.Time.Format(configs.Layout)
 		}
-		resp.Services = append(resp.Services, responses)
+		resp.Services = append(resp.Services, &responses)
 	}
 	return &pb.ServicesResponse{
 		Services: resp.Services,

@@ -10,13 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var (
-	response   *pb.Company
-	err        error
-	createScan sql.NullTime
-	updateScan sql.NullTime
-)
-
 const InsertCompanyQuery = `--name: InsertCompany :exec
 	INSERT INTO company(name, description, logo_url, created_at)
 	VALUES($1, $2, $3, $4)
@@ -24,6 +17,12 @@ const InsertCompanyQuery = `--name: InsertCompany :exec
 `
 
 func (q *Queries) InsertCompany(ctx context.Context, req *pb.CompanyRequest) (*pb.Company, error) {
+	var (
+		response   pb.Company
+		err        error
+		createScan sql.NullTime
+		updateScan sql.NullTime
+	)
 	row := q.db.QueryRow(ctx, InsertCompanyQuery, req.Name, req.Description, req.LogoUrl, time.Now())
 
 	if err = row.Scan(
@@ -45,7 +44,7 @@ func (q *Queries) InsertCompany(ctx context.Context, req *pb.CompanyRequest) (*p
 		response.UpdatedAt = updateScan.Time.Format(configs.Layout)
 	}
 
-	return response, err
+	return &response, err
 }
 
 const UpdateCompanyQuery = `--name: UpdateCompany :exec
@@ -64,6 +63,12 @@ const UpdateCompanyQuery = `--name: UpdateCompany :exec
 `
 
 func (q *Queries) UpdateCompany(ctx context.Context, req *pb.Company) (*pb.Company, error) {
+	var (
+		response   pb.Company
+		err        error
+		createScan sql.NullTime
+		updateScan sql.NullTime
+	)
 	row := q.db.QueryRow(ctx, UpdateCompanyQuery,
 		req.Name,
 		req.Description,
@@ -91,7 +96,7 @@ func (q *Queries) UpdateCompany(ctx context.Context, req *pb.Company) (*pb.Compa
 		response.UpdatedAt = updateScan.Time.Format(configs.Layout)
 	}
 
-	return response, nil
+	return &response, nil
 }
 
 const DeleteCompanyQuery = `--name: DeleteCompany :exec
@@ -104,6 +109,9 @@ const DeleteCompanyQuery = `--name: DeleteCompany :exec
 `
 
 func (q *Queries) DeleteCompany(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
+	var (
+		err error
+	)
 	_, err = q.db.Exec(ctx, DeleteCompanyQuery, req.Id)
 	if err != nil {
 		return nil, err
@@ -126,8 +134,13 @@ const SelectCompanyQuery = `--name: SelectCompany :exec
 	AND 
 	    deleted_at = '1'`
 
-
 func (q *Queries) SelectCompany(ctx context.Context, req *pb.PrimaryKey) (*pb.Company, error) {
+	var (
+		response   pb.Company
+		err        error
+		createScan sql.NullTime
+		updateScan sql.NullTime
+	)
 	row := q.db.QueryRow(ctx, SelectCompanyQuery, req.Id)
 
 	if err = row.Scan(
@@ -149,5 +162,5 @@ func (q *Queries) SelectCompany(ctx context.Context, req *pb.PrimaryKey) (*pb.Co
 		response.UpdatedAt = updateScan.Time.Format(configs.Layout)
 	}
 
-	return response, nil
+	return &response, nil
 }

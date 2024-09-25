@@ -24,6 +24,7 @@ func NewAddress(storage sqlc.Querier, log logger.ILogger) *Address {
 
 func (s *Address) CreateAddress(ctx context.Context, req *pb.AddressRequest) (*pb.Address, error) {
 	s.log.Info("Insert address successfully")
+	
 	res, err := s.storage.InsertAddress(ctx, req)
 	if err != nil {
 		s.log.Error("Insert address error", logger.Error(err))
