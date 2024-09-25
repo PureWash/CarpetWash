@@ -1,45 +1,45 @@
 package repository
 
 import (
+	"carpet/internal/configs"
+	"carpet/internal/core/repository/psql/sqlc"
+	"carpet/internal/pkg/logger"
 	"context"
 	"fmt"
 
-	"carpet/internal/configs"
-
-	"carpet/internal/pkg/logger"
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Store struct {
-	DB  *pgxpool.Pool
-	log logger.ILogger
-	cfg configs.Config
+	DB      *pgxpool.Pool
+	log     logger.ILogger
+	cfg     configs.Config
+	Queries *sqlc.Queries
 }
 
 func NewStore(ctx context.Context, log logger.ILogger, cnf configs.Config) (*Store, error) {
 	url := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
 		cnf.PostgresUser,
 		cnf.PostgresPassword,
 		cnf.PostrgresHost,
 		cnf.PostrgresPort,
 		cnf.PostgresDatabase,
 	)
+	// fmt.Println(url)
 
-	poolConfig, err := pgxpool.ParseConfig(url)
+	pool, err := pgxpool.Connect(ctx, url)
 	if err != nil {
-		log.Error("this error is parse url -> can not parsing", logger.Error(err))
+		log.Error("Error creating connection pool", logger.Error(err))
 		return nil, err
 	}
-	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
-	if err != nil {
-		log.Error("this error ie new create config with pool", logger.Error(err))
-		return nil, err
-	}
+
+	queries := sqlc.New(pool)
+
 	return &Store{
-		DB:  pool,
-		log: log,
-		cfg: cnf,
+		DB:      pool,
+		log:     log,
+		cfg:     cnf,
+		Queries: queries,
 	}, nil
 }

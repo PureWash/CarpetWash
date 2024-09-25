@@ -3,7 +3,6 @@ package main
 import (
 	"carpet/internal/configs"
 	"carpet/internal/core/repository"
-	"carpet/internal/core/service"
 	"carpet/internal/pkg/grpcConn"
 	"carpet/internal/pkg/logger"
 	"context"
@@ -36,9 +35,7 @@ func main() {
 		log.Error("error while connecting to postgres", logger.Error(err))
 		return
 	}
-	services := service.NewService(potgresStore, log)
-
-	grpcServer := grpcConn.ConnGRPC(log)
+	grpcServer := grpcConn.ConnGRPC(potgresStore.Queries, log)
 
 	lis, err := net.Listen("tcp", configs.Load().GrpcHost+configs.Load().GrpcPort)
 	if err != nil {

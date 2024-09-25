@@ -1,10 +1,11 @@
 package sqlc
 
 import (
-	pb "carpet/genproto/pure_wash"
+	pb "carpet/genproto/carpet_service"
 	"carpet/internal/configs"
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -25,6 +26,9 @@ RETURNING  id,user_id,latitude,longitude,created_at
 `
 
 func (q *Queries) InsertAddress(ctx context.Context, req *pb.AddressRequest) (*pb.Address, error) {
+	if q.db == nil{
+		fmt.Println("+++++++++")
+	}
 	row := q.db.QueryRow(ctx, InsertAddressQuery, req.UserId, req.Latitude, req.Longitude, time.Now())
 
 	if err = row.Scan(

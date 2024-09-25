@@ -1,7 +1,7 @@
 package sqlc
 
 import (
-	pb "carpet/genproto/pure_wash"
+	pb "carpet/genproto/carpet_service"
 	"carpet/internal/configs"
 	"context"
 	"database/sql"

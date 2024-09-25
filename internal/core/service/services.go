@@ -1,28 +1,28 @@
 package service
 
 import (
-	pb "carpet/genproto/pure_wash"
+	pb "carpet/genproto/carpet_service"
 	"carpet/internal/core/repository/psql/sqlc"
 	"carpet/internal/pkg/logger"
 	"context"
 
-	"google.golang.org/protobuf/types/known/emptypb"
+	"github.com/golang/protobuf/ptypes/empty"
 )
 
 type Service struct {
-	storage sqlc.Service
+	storage sqlc.Querier
 	log     logger.ILogger
 	pb.UnimplementedServiceServiceServer
 }
 
-func NewService(storage sqlc.Service, log logger.ILogger) *Service {
+func NewService(storage sqlc.Querier, log logger.ILogger) *Service {
 	return &Service{
 		storage: storage,
 		log:     log,
 	}
 }
 
-func (s *Service) InsertService(ctx context.Context, req *pb.ServiceRequest) (*pb.Service, error) {
+func (s *Service) CreateService(ctx context.Context, req *pb.ServiceRequest) (*pb.Service, error) {
 	s.log.Info("Insert service successfully")
 	res, err := s.storage.InsertService(ctx, req)
 	if err != nil {
@@ -44,7 +44,7 @@ func (s *Service) UpdateService(ctx context.Context, req *pb.Service) (*pb.Servi
 	return res, nil
 }
 
-func (s *Service) DeleteService(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
+func (s *Service) DeleteService(ctx context.Context, req *pb.PrimaryKey) (*empty.Empty, error) {
 	s.log.Info("Delete service successfully")
 	res, err := s.storage.DeleteService(ctx, req)
 	if err != nil {
@@ -55,7 +55,7 @@ func (s *Service) DeleteService(ctx context.Context, req *pb.PrimaryKey) (*empty
 	return res, nil
 }
 
-func (s *Service) SelectService(ctx context.Context, req *pb.PrimaryKey) (*pb.Service, error) {
+func (s *Service) GetService(ctx context.Context, req *pb.PrimaryKey) (*pb.Service, error) {
 	s.log.Info("Select service successfully")
 	res, err := s.storage.SelectService(ctx, req)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Service) SelectService(ctx context.Context, req *pb.PrimaryKey) (*pb.Se
 	return res, nil
 }
 
-func (s *Service) SelectServices(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
+func (s *Service) GetAllService(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
 	s.log.Info("Select services successfully")
 	res, err := s.storage.SelectServices(ctx, req)
 	if err != nil {
