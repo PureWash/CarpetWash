@@ -13,7 +13,6 @@ import (
 
 func main() {
 	cfg := configs.Load()
-
 	var loggerLevel string
 	switch cfg.Environment {
 	case logger.LevelDebug:
@@ -37,7 +36,7 @@ func main() {
 	}
 	grpcServer := grpcConn.ConnGRPC(potgresStore.Queries, log)
 
-	lis, err := net.Listen("tcp", configs.Load().GrpcHost+configs.Load().GrpcPort)
+	lis, err := net.Listen("tcp", cfg.GrpcPort)
 	if err != nil {
 		log.Error("error while listening grpc host port", logger.Error(err))
 		return

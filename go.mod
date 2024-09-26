@@ -6,7 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang/protobuf v1.5.4
 	github.com/jackc/pgconn v1.14.3
-	github.com/jackc/pgx/v4 v4.18.3
+	github.com/jackc/pgx/v4 v4.12.1-0.20210724153913-640aa07df17c
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cast v1.7.0
 	github.com/streamingfast/logging v0.0.0-20230608130331-f22c91403091

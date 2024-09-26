@@ -26,7 +26,7 @@ func NewStore(ctx context.Context, log logger.ILogger, cnf configs.Config) (*Sto
 		cnf.PostrgresPort,
 		cnf.PostgresDatabase,
 	)
-	// fmt.Println(url)
+	fmt.Println(url)
 
 	pool, err := pgxpool.Connect(ctx, url)
 	if err != nil {

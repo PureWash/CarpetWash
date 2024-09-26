@@ -13,25 +13,20 @@ type Config struct {
 	Environment string
 	LoggerLevel string
 
-	HTTPPort string
-
 	PostrgresHost    string
 	PostrgresPort    int
 	PostgresUser     string
 	PostgresPassword string
 	PostgresDatabase string
 
-	GrpcHost string
 	GrpcPort string
 }
 
 func Load() Config {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		fmt.Println("No .env file found")
 	}
 	config := Config{}
-
-	config.HTTPPort = cast.ToString(coalesce("HTTP_Port", ":8089"))
 
 	config.PostrgresHost = cast.ToString(coalesce("POSTGRES_HOST", "localhost"))
 	config.PostrgresPort = cast.ToInt(coalesce("POSTGRES_PORT", 5432))
@@ -39,8 +34,7 @@ func Load() Config {
 	config.PostgresPassword = cast.ToString(coalesce("POSTGRES_PASSWORD", "3333"))
 	config.PostgresDatabase = cast.ToString(coalesce("POSTGRES_DATABASE", "pure_wash"))
 
-	config.GrpcHost = cast.ToString(coalesce("SALE_SERVICE_GRPC_HOST", "localhost"))
-	config.GrpcPort = cast.ToString(coalesce("SALE_SERVICE_GRPC_PORT", ":8082"))
+	config.GrpcPort = cast.ToString(coalesce("GRPC_PORT", ":8082"))
 
 	return config
 }
