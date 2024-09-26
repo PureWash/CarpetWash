@@ -85,6 +85,7 @@ func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, er
 		req.Area,
 		req.Status,
 		time.Now(),
+		req.Id,
 	)
 
 	if err = row.Scan(
