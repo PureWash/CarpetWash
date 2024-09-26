@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: user.proto
 
-package pure_wash
+package user_service
 
 import (
 	context "context"

@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: company.proto
 
-package pure_wash
+package carpet_service
 
 import (
 	context "context"

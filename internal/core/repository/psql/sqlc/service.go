@@ -1,31 +1,23 @@
 package sqlc
 
 import (
-	pb "carpet/genproto/pure_wash"
-	"carpet/internal/configs"
+	pb "carpet/genproto/carpet_service"
 	"context"
-	"database/sql"
-	"time"
-
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-var (
-	responses   *pb.Service
-	resp        *pb.ServicesResponse
-	errs        error
-	createScann sql.NullTime
-	updateScann sql.NullTime
-)
-
 const InsertServiceQuery = `--name InsertService :exec
-INSERT INTO service(tariffs, name, description,price,created_at)
-VALUES($1,$2,$3,$4,$5)
-RETURNING  id,tariffs,name,description,price,created_at
+INSERT INTO services(tariffs, name, description,price)
+VALUES($1,$2,$3,$4)
+RETURNING  id,tariffs,name,description,price
 `
 
 func (q *Queries) InsertService(ctx context.Context, req *pb.ServiceRequest) (*pb.Service, error) {
-	row := q.db.QueryRow(ctx, InsertServiceQuery, req.Tariffs, req.Name, req.Description, req.Price, time.Now())
+	var (
+		responses pb.Service
+		err       error
+	)
+	row := q.db.QueryRow(ctx, InsertServiceQuery, req.Tariffs, req.Name, req.Description, req.Price)
 
 	if err = row.Scan(
 		&responses.Id,
@@ -33,24 +25,16 @@ func (q *Queries) InsertService(ctx context.Context, req *pb.ServiceRequest) (*p
 		&responses.Name,
 		&responses.Description,
 		&responses.Price,
-		&createScan,
-		&updateScan,
 	); err != nil {
 		return nil, err
 	}
-	if createScan.Valid {
-		responses.CreatedAt = createScan.Time.Format(configs.Layout)
-	}
-	if updateScan.Valid {
 
-		responses.UpdatedAt = updateScan.Time.Format(configs.Layout)
-	}
-	return responses, err
+	return &responses, err
 }
 
 const UpdateServiceQuery = `--name UpdateService :exec
 UPDATE
-    service
+    services
 SET
     tariffs = $1,
     name = $2,
@@ -58,18 +42,20 @@ SET
     price = $4
 WHERE
     id = $5 
-AND
-    deleted_at = '1'
-RETURNING id,tariffs,name,description,price,updated_at
+
+RETURNING id,tariffs,name,description,price
 `
 
 func (q *Queries) UpdateService(ctx context.Context, req *pb.Service) (*pb.Service, error) {
+	var (
+		responses pb.Service
+		err       error
+	)
 	row := q.db.QueryRow(ctx, UpdateServiceQuery,
 		req.Tariffs,
 		req.Name,
 		req.Description,
 		req.Price,
-		time.Now(),
 		req.Id,
 	)
 	if err = row.Scan(
@@ -78,27 +64,21 @@ func (q *Queries) UpdateService(ctx context.Context, req *pb.Service) (*pb.Servi
 		&responses.Name,
 		&responses.Description,
 		&responses.Price,
-		&updateScan,
 	); err != nil {
 		return nil, err
 	}
-	if updateScan.Valid {
 
-		responses.UpdatedAt = updateScan.Time.Format(configs.Layout)
-	}
-	return responses, err
+	return &responses, err
 }
 
 const DeleteServiceQuery = `--name DeleteService :exec
-UPDATE
-    service
-SET 
-    deleted_at = '0'
-WHERE
-    id = $1
+DELETE FROM services WHERE id=$1
 `
 
 func (q *Queries) DeleteService(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
+	var (
+		err error
+	)
 	_, err = q.db.Exec(ctx, DeleteServiceQuery, req.Id)
 	if err != nil {
 		return nil, err
@@ -112,18 +92,20 @@ SELECT
     tariffs,
     name,
     description,
-    price,
-    created_at,
-    updated_at
+    price
+    
 FROM 
-    service
+    services
 WHERE
     id = $1
-AND
-    deleted_at = '1'
+
 `
 
 func (q *Queries) SelectService(ctx context.Context, req *pb.PrimaryKey) (*pb.Service, error) {
+	var (
+		responses pb.Service
+		err       error
+	)
 	row := q.db.QueryRow(ctx, SelectServiceQuery, req.Id)
 
 	if err = row.Scan(
@@ -132,19 +114,11 @@ func (q *Queries) SelectService(ctx context.Context, req *pb.PrimaryKey) (*pb.Se
 		&responses.Name,
 		&responses.Description,
 		&responses.Price,
-		&createScan,
-		&updateScan,
 	); err != nil {
 		return nil, err
 	}
-	if createScan.Valid {
-		responses.CreatedAt = createScan.Time.Format(configs.Layout)
-	}
-	if updateScan.Valid {
 
-		responses.UpdatedAt = updateScan.Time.Format(configs.Layout)
-	}
-	return responses, err
+	return &responses, err
 }
 
 const SelectServicesQuery = `--name SelectServices
@@ -153,34 +127,33 @@ SELECT
     tariffs,
     name,
     description,
-    price,
-    created_at,
-    updated_at
+    price
 FROM 
-    service
+    services
 WHERE
-    id ILIKE $1
-OR
     tariffs ILIKE $1
 OR
     name ILIKE $1
 OR
     description ILIKE $1
 OR
-    price ILIKE $1
-OR 
-    created_at ILIKE $1
-OR
-    updated_at ILIKE $1
-AND
-    deleted_at not is null
+    price::text ILIKE $1 
+LIMIT $2 OFFSET $3
 `
 
 func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
-	rows, err := q.db.Query(ctx, SelectServicesQuery, req.Limit, req.Page, req.Search)
+	var (
+		responses pb.Service
+		err       error
+		resp      pb.ServicesResponse
+	)
+
+	rows, err := q.db.Query(ctx, SelectServicesQuery, req.Search, req.Limit, req.Page)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		if err = rows.Scan(
 			&responses.Id,
@@ -188,15 +161,17 @@ func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*
 			&responses.Name,
 			&responses.Description,
 			&responses.Price,
-			&createScan,
 		); err != nil {
 			return nil, err
 		}
-		if createScan.Valid {
-			responses.CreatedAt = createScan.Time.Format(configs.Layout)
-		}
-		resp.Services = append(resp.Services, responses)
+
+		resp.Services = append(resp.Services, &responses)
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return &pb.ServicesResponse{
 		Services: resp.Services,
 	}, nil
