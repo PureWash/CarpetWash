@@ -5,7 +5,7 @@ services:
     image: migrate/migrate
     command: [
       "-path", "/migrations",
-      "-database", "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DATABASE}?sslmode=disable",
+      "-database", "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@$db:5432/${POSTGRES_DATABASE}?sslmode=disable",
       "up"
     ]
     volumes:
