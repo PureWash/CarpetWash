@@ -347,3 +347,5 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 	}, nil
 
 }
+
+//one ishlamadi
