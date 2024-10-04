@@ -5,6 +5,8 @@ import (
 	"carpet/internal/configs"
 	"context"
 	"database/sql"
+	"encoding/json"
+	"log"
 	"time"
 
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -220,28 +222,55 @@ func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Orde
 
 const SelectOrdersQuery = `--name: SelectOrders :many
 	SELECT
-	    id,
-	    user_id,
-	    service_id,
-	    area,
-	    total_price,
-	    status,
-	    created_at
-	FROM
-	    orders
-	WHERE   
-	    id::text ILIKE $1
-	OR
-	    user_id::text ILIKE $1
-	OR
-	    service_id::text ILIKE $1
-	OR
-	    status ILIKE $1
-	OR
-	    total_price::text ILIKE $1
-	AND
-	    deleted_at = '1'
-	LIMIT $2 OFFSET $3
+    o.id,
+    (
+        SELECT jsonb_agg(
+            json_build_object(
+                'id', u.id,
+                'username', u.username,
+                'full_name', u.full_name,        
+                'phone_number', u.phone_number    
+            )
+        )
+        FROM users u
+        WHERE u.id = o.user_id
+    ) AS user_details,
+    (
+        SELECT jsonb_agg(
+            json_build_object(
+                'id', s.id,
+                'tariffs', s.tariffs,
+                'name', s.name,
+                'description', s.description,
+                'price', s.price
+            )
+        )
+        FROM services s                           
+        WHERE s.id = o.service_id
+    ) AS service_details,
+    o.area,
+    o.total_price,
+    o.status,
+    o.created_at
+FROM orders o
+WHERE 
+    o.deleted_at = '1' AND (
+        o.area::text ILIKE $1 OR
+        o.total_price::text ILIKE $1 OR
+        o.status ILIKE $1 OR
+        EXISTS (
+            SELECT 1
+            FROM services s
+            WHERE s.id = o.service_id AND (
+                s.tariffs ILIKE $1 OR
+                s.name ILIKE $1 OR
+                s.description::text ILIKE $1 OR   
+                s.price::text ILIKE $1
+            )
+        )
+    )
+LIMIT $2 OFFSET $3;                            
+
 `
 const OrderCount = `--name: OrderCount :exec
 	select 
@@ -254,10 +283,12 @@ const OrderCount = `--name: OrderCount :exec
 
 func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.OrdersResponse, error) {
 	var (
-		res        pb.Order
-		resps      pb.OrdersResponse
-		count      int64
-		createScan sql.NullTime
+		res           pb.OrderObject
+		resps         pb.OrdersResponse
+		count         int64
+		createScan    sql.NullTime
+		userDetail    json.RawMessage
+		serviceDetail json.RawMessage
 	)
 
 	rows, err := q.db.Query(ctx, SelectOrdersQuery, req.Search, req.Limit, req.Page)
@@ -268,8 +299,8 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 	for rows.Next() {
 		if err = rows.Scan(
 			&res.Id,
-			&res.UserId,
-			&res.ServiceId,
+			&userDetail,
+			&serviceDetail,
 			&res.Area,
 			&res.TotalPrice,
 			&res.Status,
@@ -280,6 +311,25 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 
 		if createScan.Valid {
 			res.CreatedAt = createScan.Time.Format(configs.Layout)
+		}
+
+		if len(userDetail) > 0 {
+			var user []*pb.User
+			err = json.Unmarshal(userDetail, &user)
+			if err != nil {
+				log.Println("Unmarshal error:", err)
+				return nil, err
+			}
+			res.UserObject = user
+		}
+		if len(serviceDetail) > 0 {
+			var services []*pb.Service
+			err = json.Unmarshal(serviceDetail, &services)
+			if err != nil {
+				log.Println("Unmarshal error:", err)
+				return nil, err
+			}
+			res.ServiceObject = services
 		}
 
 		resps.Orders = append(resps.Orders, &res)
