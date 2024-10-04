@@ -37,3 +37,46 @@ CREATE Table orders (
                         updated_at TIMESTAMP,
                         deleted_at int DEFAULT 1
 );
+
+
+SELECT
+    id,
+    (SELECT  jsonb_agg(
+             json_build_object(
+             'id':u.id,
+             'username':u.username,
+             'full_name':u.username,
+             'full_name':u.phone_number,
+             )
+             ) FROM users  u WHERE u.id=o.user_id ) AS USER_DETAILS
+       ,
+    (SELECT  jsonb_agg(
+             jsonb_build_object(
+              'id':s.id,
+             'tariffs':s.tariffs,
+             'name':s.name,
+             'description':s.description,
+             'price':s.price,
+             )
+             ) FROM  orders WHERE s.id=o.service_id ) AS  SERVICE_DETAILS,
+    area,
+    total_price,
+    status,
+    created_at,
+    updated_at, deleted_at
+    FROM orders o
+ WHERE o.deleted_at='1' AND o.area::text ILIKE $1 OR
+ o.total_price::text ILIKE $1
+ o.status ILIKE $1
+ EXISTS (
+        SELECT 1
+        FROM services s
+        WHERE s.id = d.service_id AND (
+            s.tariffs ILIKE $1 OR
+            s.name ILIKE $1 OR
+            s.description:text  ILIKE $1 OR
+            s.price::text  ILIKE $1 OR
+        )
+    )
+LIMIT @limit_ OFFSET @offset_
+;
