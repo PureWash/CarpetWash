@@ -1,7 +1,7 @@
 package sqlc
 
 import (
-	pb "carpet/genproto/carpet_service"
+	pb "carpet/genproto/pure_wash"
 	"carpet/internal/configs"
 	"context"
 	"database/sql"
@@ -23,12 +23,11 @@ func (q *Queries) InsertCompany(ctx context.Context, req *pb.CompanyRequest) (*p
 		createScan sql.NullTime
 		updateScan sql.NullTime
 	)
-	row := q.db.QueryRow(ctx, InsertCompanyQuery, req.Name, req.Description, req.LogoUrl, time.Now())
+	row := q.db.QueryRow(ctx, InsertCompanyQuery, req.Name, req.Description, time.Now())
 
 	if err = row.Scan(
 		&response.Id,
 		&response.Name,
-		&response.LogoUrl,
 		&response.Description,
 		&createScan,
 		&updateScan,
@@ -72,7 +71,6 @@ func (q *Queries) UpdateCompany(ctx context.Context, req *pb.Company) (*pb.Compa
 	row := q.db.QueryRow(ctx, UpdateCompanyQuery,
 		req.Name,
 		req.Description,
-		req.LogoUrl,
 		time.Now(),
 		req.Id,
 	)
@@ -80,7 +78,6 @@ func (q *Queries) UpdateCompany(ctx context.Context, req *pb.Company) (*pb.Compa
 	if err = row.Scan(
 		&response.Id,
 		&response.Name,
-		&response.LogoUrl,
 		&response.Description,
 		&createScan,
 		&updateScan,
@@ -147,7 +144,6 @@ func (q *Queries) SelectCompany(ctx context.Context, req *pb.PrimaryKey) (*pb.Co
 		&response.Id,
 		&response.Name,
 		&response.Description,
-		&response.LogoUrl,
 		&createScan,
 		&updateScan,
 	); err != nil {

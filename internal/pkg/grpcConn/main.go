@@ -1,7 +1,7 @@
 package grpcConn
 
 import (
-	carPet "carpet/genproto/carpet_service"
+	carPet "carpet/genproto/pure_wash"
 	"carpet/internal/core/repository/psql/sqlc"
 	service2 "carpet/internal/core/service"
 	"carpet/internal/pkg/logger"

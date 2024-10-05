@@ -1,7 +1,7 @@
 package sqlc
 
 import (
-	pb "carpet/genproto/carpet_service"
+	pb "carpet/genproto/pure_wash"
 	"context"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -148,7 +148,7 @@ func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*
 		resp      pb.ServicesResponse
 	)
 
-	rows, err := q.db.Query(ctx, SelectServicesQuery, req.Search, req.Limit, req.Page)
+	rows, err := q.db.Query(ctx, SelectServicesQuery, req.Limit, req.Page)
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,7 @@
 package service
 
 import (
-	pb "carpet/genproto/carpet_service"
+	pb "carpet/genproto/pure_wash"
 	"carpet/internal/core/repository/psql/sqlc"
 	"carpet/internal/pkg/logger"
 	"context"
@@ -22,7 +22,7 @@ func NewOrder(storage sqlc.Querier, log logger.ILogger) *Order {
 	}
 }
 
-func (s *Order) CreateOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Order, error) {
+func (s *Order) CreateOrder(ctx context.Context, req *pb.CreateOrderReq) (*pb.CreateOrderResp, error) {
 	s.log.Info("Insert Order successfully")
 	res, err := s.storage.InsertOrder(ctx, req)
 	if err != nil {
@@ -33,7 +33,7 @@ func (s *Order) CreateOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Orde
 	return res, nil
 }
 
-func (s *Order) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+func (s *Order) UpdateOrder(ctx context.Context, req *pb.UpdateOrderReq) (*pb.UpdateOrderResp, error) {
 	s.log.Info("Update Order successfully")
 	res, err := s.storage.UpdateOrder(ctx, req)
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *Order) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*empty.Emp
 	return res, nil
 }
 
-func (s *Order) GetOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Order, error) {
+func (s *Order) GetOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.GetOrderResp, error) {
 	s.log.Info("Select Order successfully")
 	res, err := s.storage.SelectOrder(ctx, req)
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *Order) GetOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Order, er
 	return res, nil
 }
 
-func (s *Order) GetAllOrder(ctx context.Context, req *pb.GetListRequest) (*pb.OrdersResponse, error) {
+func (s *Order) GetAllOrder(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
 	s.log.Info("Select Orders successfully")
 	res, err := s.storage.SelectOrders(ctx, req)
 	if err != nil {

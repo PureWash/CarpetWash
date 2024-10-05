@@ -1,7 +1,7 @@
 package service
 
 import (
-	pb "carpet/genproto/carpet_service"
+	pb "carpet/genproto/pure_wash"
 	"carpet/internal/core/repository/psql/sqlc"
 	"carpet/internal/pkg/logger"
 	"context"

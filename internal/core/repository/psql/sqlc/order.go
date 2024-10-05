@@ -1,52 +1,58 @@
 package sqlc
 
 import (
-	pb "carpet/genproto/carpet_service"
+	pb "carpet/genproto/pure_wash"
 	"carpet/internal/configs"
 	"context"
 	"database/sql"
-	"encoding/json"
-	"log"
+	"fmt"
 	"time"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// var (
-// 	res   *pb.Order
-// 	resps *pb.OrdersResponse
-// 	count int64
-// )
-
 const InsertOrderQuery = `--name: InsertOrder :exec
-	INSERT INTO orders
-	(user_id, service_id, area, total_price, status, created_at)
-	VALUES($1, $2, $3, $4, $5, $6)
-	RETURNING id, user_id, service_id,  area, total_price, status, created_at
+	INSERT INTO orders (
+		full_name, 
+		phone_number, 
+		latitude,
+		longitude,
+		area, 
+		total_price, 
+		service_id
+	)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING (
+		full_name,
+		phone_number,
+		area,
+		total_price,
+		created_at
+	)
 `
 
-func (q *Queries) InsertOrder(ctx context.Context, req *pb.OrderRequest) (*pb.Order, error) {
+func (q *Queries) InsertOrder(ctx context.Context, req *pb.CreateOrderReq) (*pb.CreateOrderResp, error) {
 	var (
-		res        pb.Order
+		res        pb.CreateOrderResp
 		err        error
 		createScan sql.NullTime
 	)
 	row := q.db.QueryRow(ctx, InsertOrderQuery,
-		req.UserId,
-		req.ServiceId,
-		req.Area,
-		req.TotalPrice,
-		req.Status,
+		req.Client.GetFullName(),
+		req.Client.GetPhoneNumber(),
+		req.Client.GetLatitude(),
+		req.Client.GetLongitude(),
+		req.GetArea(),
+		req.GetTotalPrice(),
+		req.GetServiceId(),
 		time.Now(),
 	)
 
 	if err = row.Scan(
-		&res.Id,
-		&res.UserId,
-		&res.ServiceId,
+		&res.FullName,
+		&res.PhoneNumber,
 		&res.Area,
 		&res.TotalPrice,
-		&res.Status,
 		&createScan,
 	); err != nil {
 		return nil, err
@@ -63,37 +69,43 @@ const UpdateOrderWithAdmin = `--name: UpdateOrderThisAdmin :exec
 	UPDATE 
 	    orders
 	SET
-	    service_id = $1,
-	    area = $2,
-	    status = $3,
-	    updated_at = $4
+	    latitude = $1,
+		longitude = $2,
+	    area = $3,
+	    status = $4,
+		total_price =  $5,
+	    updated_at = now()
 	WHERE 
 	    id = $5
 	AND
 	    deleted_at = '1'
-	RETURNING id, user_id, service_id, area, total_price, status, created_at
+	RETURNING (
+		id, 
+		area, 
+		total_price, 
+		status, 
+		updated_at
+	)
 `
 
-func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, error) {
+func (q *Queries) UpdateOrder(ctx context.Context, req *pb.UpdateOrderReq) (*pb.UpdateOrderResp, error) {
 	var (
-		res        pb.Order
+		res        pb.UpdateOrderResp
 		err        error
 		createScan sql.NullTime
 		// resps *pb.OrdersResponse
 		// count int64
 	)
 	row := q.db.QueryRow(ctx, UpdateOrderWithAdmin,
-		req.ServiceId,
-		req.Area,
-		req.Status,
-		time.Now(),
-		req.Id,
+		req.GetLatitude(),
+		req.GetLongitude(),
+		req.GetArea(),
+		req.GetStatus(),
+		req.GetTotalPrice(),
 	)
 
 	if err = row.Scan(
 		&res.Id,
-		&res.UserId,
-		&res.ServiceId,
 		&res.Area,
 		&res.TotalPrice,
 		&res.Status,
@@ -103,58 +115,11 @@ func (q *Queries) UpdateOrder(ctx context.Context, req *pb.Order) (*pb.Order, er
 	}
 
 	if createScan.Valid {
-		res.CreatedAt = createScan.Time.Format(configs.Layout)
+		res.UpdatedAt = createScan.Time.Format(configs.Layout)
 	}
 
 	return &res, nil
 }
-
-//const UpdateOrderWithUser = `--name: UpdateOrderThisUser :exec
-//	UPDATE
-//	    orders
-//	SET
-//	    service_id = $1,
-//	    area = $2
-//	    updated_at = $3
-//	WHERE
-//	    id = $4
-//	AND
-//	    deleted_at = '1'
-//	RETURNING id, user_id, service_id, area, total_price, status, created_at
-//`
-//
-//func (q *Queries) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
-//	var (
-//		res        pb.Order
-//		err        error
-//		createScan sql.NullTime
-//		// updateScan sql.NullTime
-//		// resps *pb.OrdersResponse
-//		// count int64
-//	)
-//	row := q.db.QueryRow(ctx, UpdateOrderWithUser,
-//		req.ServiceId,
-//		req.Area,
-//		time.Now(),
-//	)
-//
-//	if err = row.Scan(
-//		&res.Id,
-//		&res.UserId,
-//		&res.ServiceId,
-//		&res.Area,
-//		&res.TotalPrice,
-//		&res.Status,
-//		&createScan,
-//	); err != nil {
-//		return nil, err
-//	}
-//
-//	if createScan.Valid {
-//		res.CreatedAt = createScan.Time.Format(configs.Layout)
-//	}
-//	return &res, nil
-//}
 
 const DeleteOrderQuery = `--name: DeleteORder :exec
 	UPDATE
@@ -162,7 +127,7 @@ const DeleteOrderQuery = `--name: DeleteORder :exec
 	SET
 	    deleted_at = '0'
 	WHERE 
-	    id = $1
+	    id = $1;
 `
 
 func (q *Queries) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*emptypb.Empty, error) {
@@ -179,33 +144,46 @@ func (q *Queries) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*emptypb
 const SelectOrderQuery = `--name: SelectOrder :exec
 	SELECT
 	    id,
-	    user_id,
-	    service_id,
+	    full_name,
+		phone_number,
+		latitude,
+		longitude,
+	    name,
+		tariffs,
 	    area,
 	    total_price,
 	    status,
 	    created_at
 	FROM    
-	    orders
+	    orders AS o
+	INNER JOIN clients AS c
+		ON o.client_id = c.id AND c.deleted_at IS NULL
+	INNER JOIN services AS s
+		ON o.service_id = s.id AND s.deleted_at IS NULL
 	WHERE
-	    id = $1
+	    o.id = $1
 	AND
-	    deleted_at = '1'
+	    o.deleted_at = '1'
 `
 
-func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Order, error) {
+func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.GetOrderResp, error) {
 	var (
-		res        pb.Order
+		res        pb.GetOrderResp
 		err        error
 		createScan sql.NullTime
-		// updateScan sql.NullTime
+		client 		pb.Client
+		service		pb.Services
 	)
 	row := q.db.QueryRow(ctx, SelectOrderQuery, req.Id)
 
 	if err = row.Scan(
 		&res.Id,
-		&res.UserId,
-		&res.ServiceId,
+		&client.FullName,
+		&client.PhoneNumber,
+		&client.Latitude,
+		&client.Longitude,
+		&service.Name,
+		&service.Tariffs,
 		&res.Area,
 		&res.TotalPrice,
 		&res.Status,
@@ -217,135 +195,144 @@ func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.Orde
 	if createScan.Valid {
 		res.CreatedAt = createScan.Time.Format(configs.Layout)
 	}
+	res.Client = &client
+	res.Service = &service
 	return &res, nil
 }
 
-const SelectOrdersQuery = `--name: SelectOrders :many
+var selectOrders = `
 	SELECT
-    o.id,
-    (
-        SELECT jsonb_agg(
-            json_build_object(
-                'id', u.id,
-                'username', u.username,
-                'full_name', u.full_name,        
-                'phone_number', u.phone_number    
-            )
-        )
-        FROM users u
-        WHERE u.id = o.user_id
-    ) AS user_details,
-    (
-        SELECT jsonb_agg(
-            json_build_object(
-                'id', s.id,
-                'tariffs', s.tariffs,
-                'name', s.name,
-                'description', s.description,
-                'price', s.price
-            )
-        )
-        FROM services s                           
-        WHERE s.id = o.service_id
-    ) AS service_details,
-    o.area,
-    o.total_price,
-    o.status,
-    o.created_at
-FROM orders o
-WHERE 
-    o.deleted_at = '1' AND (
-        o.area::text ILIKE $1 OR
-        o.total_price::text ILIKE $1 OR
-        o.status ILIKE $1 OR
-        EXISTS (
-            SELECT 1
-            FROM services s
-            WHERE s.id = o.service_id AND (
-                s.tariffs ILIKE $1 OR
-                s.name ILIKE $1 OR
-                s.description::text ILIKE $1 OR   
-                s.price::text ILIKE $1
-            )
-        )
-    )
-LIMIT $2 OFFSET $3;                            
-
+		id,
+		full_name,
+		phone_number,
+		latitude,
+		longitude,
+		status
+	FROM
+		orders AS o
+	INNER JOIN clients AS c
+		ON o.client_id = c.id
+	WHERE
+		o.deleted_at IS NULL  AND
+		status = 'toyyor' AND
+		OFFSET = $1 AND
+		LIMIT = $2;
 `
-const OrderCount = `--name: OrderCount :exec
-	select 
-		COUNT(*) as count
-	from 
-		orders
-	where	
-		deleted_at = '1' 
-	`
 
-func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.OrdersResponse, error) {
+var countQuery = `
+	SELECT 
+		COUNT(*)
+	FROM
+		orders AS o
+	INNER JOIN clients AS c
+		ON o.client_id = c.id
+	WHERE
+		o.deleted_at IS NULL AND status = 'toyyor';
+`
+
+func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
+	var orders []*pb.Order
+	
+	rows, err := q.db.Query(ctx, selectOrders, (req.Offset - 1)*req.Limit, req.Limit)
+	if err != nil {
+		return nil, err
+	}
+	
+	for rows.Next() {
+		var order pb.Order
+		var client pb.Client
+
+		err := rows.Scan(&order.Id, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &order.Status)
+		if err != nil {
+			return nil, err
+		}
+		order.Client = &client
+
+		orders = append(orders, &order)
+	}
+
+	var count int32
+	err = q.db.QueryRow(ctx, countQuery).Scan(&count)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.GetOrdersResp{
+		Orders: orders,
+		TotalCount: count,
+		Limit: int32(req.Limit),
+		Offset: int32(req.Offset),
+	}, nil
+}
+
+
+var selectOrderFilter = `
+	SELECT
+		id,
+		full_name,
+		phone_number,
+		latitude,
+		longitude,
+		status
+	FROM
+		orders AS o
+	INNER JOIN clients AS c
+		ON o.client_id = c.id
+	WHERE
+		o.deleted_at IS NULL
+`
+
+func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
 	var (
-		res           pb.OrderObject
-		resps         pb.OrdersResponse
-		count         int64
-		createScan    sql.NullTime
-		userDetail    json.RawMessage
-		serviceDetail json.RawMessage
+		filter string
+		args []interface{}
 	)
 
-	rows, err := q.db.Query(ctx, SelectOrdersQuery, req.Search, req.Limit, req.Page)
+	if req.FullName != "" {
+		filter += fmt.Sprintf(" AND c.full_name ILIKE $%d", len(args)+1)
+		args = append(args, fmt.Sprintf("%%%s%%", req.FullName))
+	}
+	if req.Status != "" {
+		filter += fmt.Sprintf(" AND o.status ILIKE $%d", len(args)+1)
+		args = append(args, fmt.Sprintf("%%%s%%", req.Status))
+	}
+	if req.OnTime != "" {
+		filter += fmt.Sprintf(" AND o.created_at ILIKE $%d", len(args)+1)
+		args = append(args, fmt.Sprintf("%%%s%%", req.OnTime))
+	}
+
+	var count int32
+
+	err := q.db.QueryRow(ctx, selectOrderFilter + filter, args...).Scan(&count)
+	if err != nil {
+		return nil, err
+	}
+
+	filter += fmt.Sprintf(" LIMIT %d OFFSET %d", req.Limit, (req.Offset-1)*req.Limit)
+
+	var orders []*pb.Order
+
+	rows, err := q.db.Query(ctx, selectOrderFilter + filter, args...)
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
-		if err = rows.Scan(
-			&res.Id,
-			&userDetail,
-			&serviceDetail,
-			&res.Area,
-			&res.TotalPrice,
-			&res.Status,
-			&createScan,
-		); err != nil {
+		var order pb.Order
+		var client pb.Client
+
+		err := rows.Scan(&order.Id, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &order.Status)
+		if err != nil {
 			return nil, err
 		}
-
-		if createScan.Valid {
-			res.CreatedAt = createScan.Time.Format(configs.Layout)
-		}
-
-		if len(userDetail) > 0 {
-			var user []*pb.User
-			err = json.Unmarshal(userDetail, &user)
-			if err != nil {
-				log.Println("Unmarshal error:", err)
-				return nil, err
-			}
-			res.UserObject = user
-		}
-		if len(serviceDetail) > 0 {
-			var services []*pb.Service
-			err = json.Unmarshal(serviceDetail, &services)
-			if err != nil {
-				log.Println("Unmarshal error:", err)
-				return nil, err
-			}
-			res.ServiceObject = services
-		}
-
-		resps.Orders = append(resps.Orders, &res)
+		order.Client = &client
+		orders = append(orders, &order)
 	}
 
-	r := q.db.QueryRow(ctx, OrderCount)
-
-	if err = r.Scan(&count); err != nil {
-		return nil, err
-	}
-
-	return &pb.OrdersResponse{
-		Orders: resps.Orders,
-		Count:  count,
+	return  &pb.GetOrdersResp{
+		Orders: orders,
+		TotalCount: count,
+		Limit: req.Limit,
+		Offset: req.Offset,
 	}, nil
-
 }
-
-//one ishlamadi
