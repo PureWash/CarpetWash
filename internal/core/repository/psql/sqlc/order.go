@@ -3,6 +3,7 @@ package sqlc
 import (
 	pb "carpet/genproto/pure_wash"
 	"carpet/internal/configs"
+	"carpet/internal/models"
 	"context"
 	"database/sql"
 	"fmt"
@@ -13,44 +14,36 @@ import (
 
 const InsertOrderQuery = `--name: InsertOrder :exec
 	INSERT INTO orders (
-		full_name, 
-		phone_number, 
-		latitude,
-		longitude,
+		user_id,
+		service_id,
 		area, 
-		total_price, 
-		service_id
+		total_price
 	)
-	VALUES ($1, $2, $3, $4, $5, $6)
+	VALUES ($1, $2, $3, $4)
 	RETURNING (
-		full_name,
-		phone_number,
+		id,
 		area,
 		total_price,
 		created_at
 	)
 `
 
-func (q *Queries) InsertOrder(ctx context.Context, req *pb.CreateOrderReq) (*pb.CreateOrderResp, error) {
+func (q *Queries) InsertOrder(ctx context.Context, req models.CreateOrderReq) (*models.CreateOrderResp, error) {
 	var (
-		res        pb.CreateOrderResp
+		res        models.CreateOrderResp
 		err        error
 		createScan sql.NullTime
 	)
 	row := q.db.QueryRow(ctx, InsertOrderQuery,
-		req.Client.GetFullName(),
-		req.Client.GetPhoneNumber(),
-		req.Client.GetLatitude(),
-		req.Client.GetLongitude(),
-		req.GetArea(),
-		req.GetTotalPrice(),
-		req.GetServiceId(),
+		req.ClientID,
+		req.ServiceId,
+		req.Area,
+		req.TotalPrice,
 		time.Now(),
 	)
 
 	if err = row.Scan(
-		&res.FullName,
-		&res.PhoneNumber,
+		&res.ID,
 		&res.Area,
 		&res.TotalPrice,
 		&createScan,
@@ -69,18 +62,17 @@ const UpdateOrderWithAdmin = `--name: UpdateOrderThisAdmin :exec
 	UPDATE 
 	    orders
 	SET
-	    latitude = $1,
-		longitude = $2,
-	    area = $3,
-	    status = $4,
-		total_price =  $5,
+	    area = $1,
+	    status = $2,
+		total_price =  $3,
 	    updated_at = now()
 	WHERE 
-	    id = $5
+	    id = $4
 	AND
 	    deleted_at = '1'
 	RETURNING (
 		id, 
+		client_id,
 		area, 
 		total_price, 
 		status, 
@@ -88,24 +80,22 @@ const UpdateOrderWithAdmin = `--name: UpdateOrderThisAdmin :exec
 	)
 `
 
-func (q *Queries) UpdateOrder(ctx context.Context, req *pb.UpdateOrderReq) (*pb.UpdateOrderResp, error) {
+func (q *Queries) UpdateOrder(ctx context.Context, req models.UpdateOrderReq) (*models.UpdateOrderResp, error) {
 	var (
-		res        pb.UpdateOrderResp
+		res        models.UpdateOrderResp
 		err        error
 		createScan sql.NullTime
 		// resps *pb.OrdersResponse
 		// count int64
 	)
 	row := q.db.QueryRow(ctx, UpdateOrderWithAdmin,
-		req.GetLatitude(),
-		req.GetLongitude(),
-		req.GetArea(),
-		req.GetStatus(),
-		req.GetTotalPrice(),
+		req.Area,
+		req.Status,
+		req.TotalPrice,
 	)
 
 	if err = row.Scan(
-		&res.Id,
+		&res.ID,
 		&res.Area,
 		&res.TotalPrice,
 		&res.Status,
@@ -171,8 +161,8 @@ func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.GetO
 		res        pb.GetOrderResp
 		err        error
 		createScan sql.NullTime
-		client 		pb.Client
-		service		pb.Services
+		client     pb.Client
+		service    pb.Services
 	)
 	row := q.db.QueryRow(ctx, SelectOrderQuery, req.Id)
 
@@ -230,14 +220,14 @@ var countQuery = `
 		o.deleted_at IS NULL AND status = 'toyyor';
 `
 
-func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
+func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.GetOrdersResp, error) {
 	var orders []*pb.Order
-	
-	rows, err := q.db.Query(ctx, selectOrders, (req.Offset - 1)*req.Limit, req.Limit)
+
+	rows, err := q.db.Query(ctx, selectOrders, (req.Page-1)*req.Limit, req.Limit)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	for rows.Next() {
 		var order pb.Order
 		var client pb.Client
@@ -258,13 +248,12 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*p
 	}
 
 	return &pb.GetOrdersResp{
-		Orders: orders,
+		Orders:     orders,
 		TotalCount: count,
-		Limit: int32(req.Limit),
-		Offset: int32(req.Offset),
+		Limit:      int32(req.Limit),
+		Offset:     int32(req.Page),
 	}, nil
 }
-
 
 var selectOrderFilter = `
 	SELECT
@@ -285,7 +274,7 @@ var selectOrderFilter = `
 func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
 	var (
 		filter string
-		args []interface{}
+		args   []interface{}
 	)
 
 	if req.FullName != "" {
@@ -303,7 +292,7 @@ func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*p
 
 	var count int32
 
-	err := q.db.QueryRow(ctx, selectOrderFilter + filter, args...).Scan(&count)
+	err := q.db.QueryRow(ctx, selectOrderFilter+filter, args...).Scan(&count)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +301,7 @@ func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*p
 
 	var orders []*pb.Order
 
-	rows, err := q.db.Query(ctx, selectOrderFilter + filter, args...)
+	rows, err := q.db.Query(ctx, selectOrderFilter+filter, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -329,10 +318,10 @@ func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*p
 		orders = append(orders, &order)
 	}
 
-	return  &pb.GetOrdersResp{
-		Orders: orders,
+	return &pb.GetOrdersResp{
+		Orders:     orders,
 		TotalCount: count,
-		Limit: req.Limit,
-		Offset: req.Offset,
+		Limit:      req.Limit,
+		Offset:     req.Offset,
 	}, nil
 }

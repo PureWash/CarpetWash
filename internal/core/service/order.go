@@ -3,6 +3,7 @@ package service
 import (
 	pb "carpet/genproto/pure_wash"
 	"carpet/internal/core/repository/psql/sqlc"
+	"carpet/internal/models"
 	"carpet/internal/pkg/logger"
 	"context"
 
@@ -24,36 +25,70 @@ func NewOrder(storage sqlc.Querier, log logger.ILogger) *Order {
 
 func (s *Order) CreateOrder(ctx context.Context, req *pb.CreateOrderReq) (*pb.CreateOrderResp, error) {
 	s.log.Info("Insert Order successfully")
-	res, err := s.storage.InsertOrder(ctx, req)
+
+	resp1, err := s.storage.CreateClient(ctx, models.CreateClientReq{
+		FullName:    req.Client.FullName,
+		PhoneNumber: req.Client.PhoneNumber,
+		Latitude:    req.Client.Latitude,
+		Longitude:   req.Client.Longitude,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.storage.InsertOrder(ctx, models.CreateOrderReq{
+		ClientID:   resp1.ID,
+		Area:       req.Area,
+		TotalPrice: req.TotalPrice,
+		ServiceId:  req.ServiceId,
+	})
 	if err != nil {
 		s.log.Error("Insert Order error", logger.Error(err))
 		return nil, err
 	}
+
 	s.log.Info("Success Order service")
-	return res, nil
+	return &pb.CreateOrderResp{
+		FullName:    resp1.FullName,
+		PhoneNumber: resp1.PhoneNumber,
+		Area:        resp.Area,
+		TotalPrice:  resp.TotalPrice,
+		CreatedAt:   resp.CreatedAt,
+	}, nil
 }
 
 func (s *Order) UpdateOrder(ctx context.Context, req *pb.UpdateOrderReq) (*pb.UpdateOrderResp, error) {
 	s.log.Info("Update Order successfully")
-	res, err := s.storage.UpdateOrder(ctx, req)
+
+	res, err := s.storage.UpdateOrder(ctx, models.UpdateOrderReq{
+		ID:         req.GetId(),
+		Area:       req.GetArea(),
+		TotalPrice: req.GetTotalPrice(),
+		Status:     req.GetStatus(),
+	})
 	if err != nil {
 		s.log.Error("Update Order error", logger.Error(err))
 		return nil, err
 	}
-	s.log.Info("Success Order service")
-	return res, nil
-}
 
-//func (s *Order) UpdateOrderWithUser(ctx context.Context, req *pb.Order) (*pb.Order, error) {
-//	s.log.Info("Update Order with user successfully")
-//	res, err := s.storage.UpdateOrderWithUser(ctx, req)
-//	if err != nil {
-//		s.log.Error("Update Order with user error", logger.Error(err))
-//		return nil, err
-//	}
-//	s.log.Info("Success Order service")
-//	return res, nil
-//}
+	err = s.storage.UpdateClient(ctx, models.UpdateClientReq{
+		ID:          res.ClientID,
+		Latitude:    req.Latitude,
+		Longitude:   req.Longitude,
+		PhoneNumber: req.PhoneNumber,
+	})
+	if err != nil {
+		return nil, err
+	}
+	s.log.Info("Success Order service")
+	return &pb.UpdateOrderResp{
+		Id:         res.ID,
+		Area:       res.Area,
+		TotalPrice: res.TotalPrice,
+		UpdatedAt:  res.UpdatedAt,
+	}, nil
+}
 
 func (s *Order) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*empty.Empty, error) {
 	s.log.Info("Delete Order successfully")
@@ -77,7 +112,7 @@ func (s *Order) GetOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.GetOrderR
 	return res, nil
 }
 
-func (s *Order) GetAllOrder(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
+func (s *Order) GetAllOrder(ctx context.Context, req *pb.GetListRequest) (*pb.GetOrdersResp, error) {
 	s.log.Info("Select Orders successfully")
 	res, err := s.storage.SelectOrders(ctx, req)
 	if err != nil {
@@ -86,4 +121,15 @@ func (s *Order) GetAllOrder(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.G
 	}
 	s.log.Info("Success Order service")
 	return res, nil
+}
+
+func (s *Order) GetAllOrderForCurier(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
+	s.log.Info("Get Orders filter successfully")
+	resp, err := s.storage.GetAllOrders(ctx, req)
+	if err != nil {
+		s.log.Error("Select Order filters error", logger.Error(err))
+		return nil, err
+	}
+	s.log.Info("Success Order filter service")
+	return resp, err
 }
