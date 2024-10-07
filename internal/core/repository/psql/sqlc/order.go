@@ -7,28 +7,29 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
+	"log"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const InsertOrderQuery = `--name: InsertOrder :exec
 	INSERT INTO orders (
-		user_id,
+		client_id,
 		service_id,
 		area, 
 		total_price
 	)
 	VALUES ($1, $2, $3, $4)
-	RETURNING (
+	RETURNING 
 		id,
 		area,
 		total_price,
 		created_at
-	)
+	
 `
 
 func (q *Queries) InsertOrder(ctx context.Context, req models.CreateOrderReq) (*models.CreateOrderResp, error) {
+	log.Println("go run cmdm")
 	var (
 		res        models.CreateOrderResp
 		err        error
@@ -39,7 +40,6 @@ func (q *Queries) InsertOrder(ctx context.Context, req models.CreateOrderReq) (*
 		req.ServiceId,
 		req.Area,
 		req.TotalPrice,
-		time.Now(),
 	)
 
 	if err = row.Scan(
@@ -70,14 +70,14 @@ const UpdateOrderWithAdmin = `--name: UpdateOrderThisAdmin :exec
 	    id = $4
 	AND
 	    deleted_at = '1'
-	RETURNING (
+	RETURNING 
 		id, 
 		client_id,
 		area, 
 		total_price, 
 		status, 
 		updated_at
-	)
+	
 `
 
 func (q *Queries) UpdateOrder(ctx context.Context, req models.UpdateOrderReq) (*models.UpdateOrderResp, error) {
@@ -92,10 +92,12 @@ func (q *Queries) UpdateOrder(ctx context.Context, req models.UpdateOrderReq) (*
 		req.Area,
 		req.Status,
 		req.TotalPrice,
+		req.ID,
 	)
 
 	if err = row.Scan(
 		&res.ID,
+		&res.ClientID,
 		&res.Area,
 		&res.TotalPrice,
 		&res.Status,
@@ -133,7 +135,7 @@ func (q *Queries) DeleteOrder(ctx context.Context, req *pb.PrimaryKey) (*emptypb
 
 const SelectOrderQuery = `--name: SelectOrder :exec
 	SELECT
-	    id,
+	    o.id,
 	    full_name,
 		phone_number,
 		latitude,
@@ -143,13 +145,13 @@ const SelectOrderQuery = `--name: SelectOrder :exec
 	    area,
 	    total_price,
 	    status,
-	    created_at
+	    o.created_at
 	FROM    
 	    orders AS o
 	INNER JOIN clients AS c
-		ON o.client_id = c.id AND c.deleted_at IS NULL
+		ON o.client_id = c.id AND c.deleted_at = '1'
 	INNER JOIN services AS s
-		ON o.service_id = s.id AND s.deleted_at IS NULL
+		ON o.service_id = s.id
 	WHERE
 	    o.id = $1
 	AND
@@ -192,7 +194,7 @@ func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.GetO
 
 var selectOrders = `
 	SELECT
-		id,
+		o.id,
 		full_name,
 		phone_number,
 		latitude,
@@ -203,10 +205,9 @@ var selectOrders = `
 	INNER JOIN clients AS c
 		ON o.client_id = c.id
 	WHERE
-		o.deleted_at IS NULL  AND
-		status = 'toyyor' AND
-		OFFSET = $1 AND
-		LIMIT = $2;
+		o.deleted_at = '1' AND
+		status = 'tayyor'
+	OFFSET $1 LIMIT $2;
 `
 
 var countQuery = `
@@ -217,13 +218,13 @@ var countQuery = `
 	INNER JOIN clients AS c
 		ON o.client_id = c.id
 	WHERE
-		o.deleted_at IS NULL AND status = 'toyyor';
+		o.deleted_at = '1' AND status = 'toyyor';
 `
 
 func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.GetOrdersResp, error) {
 	var orders []*pb.Order
 
-	rows, err := q.db.Query(ctx, selectOrders, (req.Page-1)*req.Limit, req.Limit)
+	rows, err := q.db.Query(ctx, selectOrders, req.Page, req.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -256,72 +257,102 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 }
 
 var selectOrderFilter = `
-	SELECT
-		id,
-		full_name,
-		phone_number,
-		latitude,
-		longitude,
-		status
-	FROM
-		orders AS o
-	INNER JOIN clients AS c
-		ON o.client_id = c.id
-	WHERE
-		o.deleted_at IS NULL
+SELECT
+    o.id,
+    c.full_name,
+    c.phone_number,
+    c.latitude,
+    c.longitude,
+    o.status
+FROM
+    orders AS o
+INNER JOIN clients AS c
+    ON o.client_id = c.id
+WHERE
+    o.deleted_at = '1'
+`
+
+var countsQuery = `
+SELECT
+    COUNT(*)
+FROM
+    orders AS o
+INNER JOIN clients AS c
+    ON o.client_id = c.id
+WHERE
+    o.deleted_at = '1'
 `
 
 func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
-	var (
-		filter string
-		args   []interface{}
-	)
+    var (
+        filter string
+        args   []interface{}
+    )
 
-	if req.FullName != "" {
-		filter += fmt.Sprintf(" AND c.full_name ILIKE $%d", len(args)+1)
-		args = append(args, fmt.Sprintf("%%%s%%", req.FullName))
-	}
-	if req.Status != "" {
-		filter += fmt.Sprintf(" AND o.status ILIKE $%d", len(args)+1)
-		args = append(args, fmt.Sprintf("%%%s%%", req.Status))
-	}
-	if req.OnTime != "" {
-		filter += fmt.Sprintf(" AND o.created_at ILIKE $%d", len(args)+1)
-		args = append(args, fmt.Sprintf("%%%s%%", req.OnTime))
-	}
+    // FullName filter
+    if req.FullName != "" {
+        filter += fmt.Sprintf(" AND c.full_name ILIKE $%d", len(args)+1)
+        args = append(args, fmt.Sprintf("%%%s%%", req.FullName))
+    }
 
-	var count int32
+    // Status filter
+    if req.Status != "" {
+        filter += fmt.Sprintf(" AND o.status ILIKE $%d", len(args)+1)
+        args = append(args, fmt.Sprintf("%%%s%%", req.Status))
+    }
 
-	err := q.db.QueryRow(ctx, selectOrderFilter+filter, args...).Scan(&count)
-	if err != nil {
-		return nil, err
-	}
+    // OnTime filter (assuming created_at filter)
+    if req.OnTime != "" {
+        filter += fmt.Sprintf(" AND o.created_at::TEXT ILIKE $%d", len(args)+1)
+        args = append(args, fmt.Sprintf("%%%s%%", req.OnTime))
+    }
 
-	filter += fmt.Sprintf(" LIMIT %d OFFSET %d", req.Limit, (req.Offset-1)*req.Limit)
+    // Count total rows
+    var count int32
+    err := q.db.QueryRow(ctx, countsQuery+filter, args...).Scan(&count)
+    if err != nil {
+        return nil, err
+    }
 
-	var orders []*pb.Order
+    // Pagination (LIMIT and OFFSET)
+    filter += fmt.Sprintf(" LIMIT %d OFFSET %d", req.Limit, req.Offset)
 
-	rows, err := q.db.Query(ctx, selectOrderFilter+filter, args...)
-	if err != nil {
-		return nil, err
-	}
+    // Select orders with the applied filter
+    rows, err := q.db.Query(ctx, selectOrderFilter+filter, args...)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
 
-	for rows.Next() {
-		var order pb.Order
-		var client pb.Client
+    var orders []*pb.Order
+    for rows.Next() {
+        var order pb.Order
+        var client pb.Client
+        var status sql.NullString // status uchun sql.NullString dan foydalanamiz
 
-		err := rows.Scan(&order.Id, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &order.Status)
-		if err != nil {
-			return nil, err
-		}
-		order.Client = &client
-		orders = append(orders, &order)
-	}
+        err := rows.Scan(&order.Id, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &status)
+        if err != nil {
+            return nil, err
+        }
 
-	return &pb.GetOrdersResp{
-		Orders:     orders,
-		TotalCount: count,
-		Limit:      req.Limit,
-		Offset:     req.Offset,
-	}, nil
+        // Agar status NULL bo'lsa, default qiymatni beramiz
+        if status.Valid {
+            order.Status = status.String
+        } else {
+            order.Status = "" // yoki boshqa default qiymat
+        }
+
+        // Assign the client info to the order
+        order.Client = &client
+        orders = append(orders, &order)
+    }
+
+    // Return the response
+    return &pb.GetOrdersResp{
+        Orders:     orders,
+        TotalCount: count,
+        Limit:      req.Limit,
+        Offset:     req.Offset,
+    }, nil
 }
+

@@ -6,17 +6,17 @@ import (
 )
 
 const createClientQuery = `
-	INSERT INTO orders (
+	INSERT INTO clients (
 		full_name,
 		phone_number,
 		latitude,
 		longitude
 	) VALUES($1, $2, $3, $4)
-	RETURNING (
+	RETURNING 
 		id,
 		full_name,
 		phone_number
-	)
+	
 `
 
 func (q *Queries) CreateClient(ctx context.Context, req models.CreateClientReq) (*models.CreateClientResp, error) {
