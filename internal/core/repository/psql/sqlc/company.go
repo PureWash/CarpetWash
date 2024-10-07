@@ -11,9 +11,9 @@ import (
 )
 
 const InsertCompanyQuery = `--name: InsertCompany :exec
-	INSERT INTO company(name, description, logo_url, created_at)
-	VALUES($1, $2, $3, $4)
-	RETURNING id, name, description, logo_url, created_at,updated_at
+	INSERT INTO company(name, description, created_at)
+	VALUES($1, $2, $3)
+	RETURNING id, name, description,created_at,updated_at
 `
 
 func (q *Queries) InsertCompany(ctx context.Context, req *pb.CompanyRequest) (*pb.Company, error) {
@@ -52,13 +52,12 @@ const UpdateCompanyQuery = `--name: UpdateCompany :exec
 	SET
 	    name = $1,
 	    description = $2,
-	    logo_url = $3,
-		updated_at = $4
+		updated_at = $3
 	WHERE
-	    id = $5
+	    id = $4
 	AND 
 	    deleted_at = '1'
-	RETURNING id, name, description, logo_url, created_at,updated_at
+	RETURNING id, name, description, created_at,updated_at
 `
 
 func (q *Queries) UpdateCompany(ctx context.Context, req *pb.Company) (*pb.Company, error) {
@@ -121,7 +120,6 @@ const SelectCompanyQuery = `--name: SelectCompany :exec
 	    id,
 	    name, 
 	    description,
-	    logo_url, 
 	    created_at, 
 	    updated_at
 	FROM 

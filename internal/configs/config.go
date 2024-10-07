@@ -32,7 +32,7 @@ func Load() Config {
 	config.PostrgresPort = cast.ToInt(coalesce("POSTGRES_PORT", 5432))
 	config.PostgresUser = cast.ToString(coalesce("POSTGRES_USER", "postgres"))
 	config.PostgresPassword = cast.ToString(coalesce("POSTGRES_PASSWORD", "3333"))
-	config.PostgresDatabase = cast.ToString(coalesce("POSTGRES_DATABASE", "carpetwash_service"))
+	config.PostgresDatabase = cast.ToString(coalesce("POSTGRES_DATABASE", "carpet_wash"))
 
 	config.GrpcPort = cast.ToString(coalesce("GRPC_PORT", ":8082"))
 
