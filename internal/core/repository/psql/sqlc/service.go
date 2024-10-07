@@ -130,15 +130,7 @@ SELECT
     price
 FROM 
     services
-WHERE
-    tariffs ILIKE $1
-OR
-    name ILIKE $1
-OR
-    description ILIKE $1
-OR
-    price::text ILIKE $1 
-LIMIT $2 OFFSET $3
+LIMIT $1 OFFSET $2
 `
 
 func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
