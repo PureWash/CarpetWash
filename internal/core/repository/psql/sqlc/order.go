@@ -363,3 +363,22 @@ func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*p
 		Offset:     req.Offset,
 	}, nil
 }
+
+var updateOrderStatus = `
+ UPDATE
+    SET  status=$1
+ FROM
+  orders  WHERE id=$2
+ RETURNING id;
+`
+
+func (q *Queries) UpdateOrderStatus(ctx context.Context, req *pb.StatusOrderReq) (*pb.PrimaryKey, error) {
+ var ID string
+ err := q.db.QueryRow(ctx, updateOrderStatus, req.Id, req.Status).Scan(&ID)
+ if err != nil {
+  return nil, err
+ }
+ return &pb.PrimaryKey{
+  Id: ID,
+ }, nil
+}

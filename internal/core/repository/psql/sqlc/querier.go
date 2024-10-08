@@ -25,6 +25,7 @@ type Querier interface {
 	SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.GetOrdersResp, error)
 	SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.GetOrderResp, error)
 	GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error)
+	UpdateOrderStatus(ctx context.Context, req *pb.StatusOrderReq) (*pb.PrimaryKey, error)
 
 	CreateClient(ctx context.Context, req models.CreateClientReq) (*models.CreateClientResp, error)
 	UpdateClient(ctx context.Context, req models.UpdateClientReq) error
