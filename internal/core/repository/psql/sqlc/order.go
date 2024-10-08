@@ -6,6 +6,7 @@ import (
 	"carpet/internal/models"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -218,10 +219,20 @@ var countQuery = `
 	INNER JOIN clients AS c
 		ON o.client_id = c.id
 	WHERE
-		o.deleted_at = '1' AND status = 'toyyor';
+		o.deleted_at = '1' AND status = 'tayyor';
 `
 
 func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.GetOrdersResp, error) {
+	var count int32
+	err := q.db.QueryRow(ctx, countQuery).Scan(&count)
+	if err != nil {
+		return nil, err
+	}
+
+	if count == 0 {
+		return nil, errors.New(("hech qanday ma'lumot topilmadi"))
+	}
+
 	var orders []*pb.Order
 
 	rows, err := q.db.Query(ctx, selectOrders, req.Page, req.Limit)
@@ -240,12 +251,6 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 		order.Client = &client
 
 		orders = append(orders, &order)
-	}
-
-	var count int32
-	err = q.db.QueryRow(ctx, countQuery).Scan(&count)
-	if err != nil {
-		return nil, err
 	}
 
 	return &pb.GetOrdersResp{
@@ -284,75 +289,77 @@ WHERE
 `
 
 func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*pb.GetOrdersResp, error) {
-    var (
-        filter string
-        args   []interface{}
-    )
+	var (
+		filter string
+		args   []interface{}
+	)
 
-    // FullName filter
-    if req.FullName != "" {
-        filter += fmt.Sprintf(" AND c.full_name ILIKE $%d", len(args)+1)
-        args = append(args, fmt.Sprintf("%%%s%%", req.FullName))
-    }
+	// FullName filter
+	if req.FullName != "" {
+		filter += fmt.Sprintf(" AND c.full_name ILIKE $%d", len(args)+1)
+		args = append(args, fmt.Sprintf("%%%s%%", req.FullName))
+	}
 
-    // Status filter
-    if req.Status != "" {
-        filter += fmt.Sprintf(" AND o.status ILIKE $%d", len(args)+1)
-        args = append(args, fmt.Sprintf("%%%s%%", req.Status))
-    }
+	// Status filter
+	if req.Status != "" {
+		filter += fmt.Sprintf(" AND o.status ILIKE $%d", len(args)+1)
+		args = append(args, fmt.Sprintf("%%%s%%", req.Status))
+	}
 
-    // OnTime filter (assuming created_at filter)
-    if req.OnTime != "" {
-        filter += fmt.Sprintf(" AND o.created_at::TEXT ILIKE $%d", len(args)+1)
-        args = append(args, fmt.Sprintf("%%%s%%", req.OnTime))
-    }
+	// OnTime filter (assuming created_at filter)
+	if req.OnTime != "" {
+		filter += fmt.Sprintf(" AND o.created_at::TEXT ILIKE $%d", len(args)+1)
+		args = append(args, fmt.Sprintf("%%%s%%", req.OnTime))
+	}
 
-    // Count total rows
-    var count int32
-    err := q.db.QueryRow(ctx, countsQuery+filter, args...).Scan(&count)
-    if err != nil {
-        return nil, err
-    }
+	// Count total rows
+	var count int32
+	err := q.db.QueryRow(ctx, countsQuery+filter, args...).Scan(&count)
+	if err != nil {
+		return nil, err
+	}
 
-    // Pagination (LIMIT and OFFSET)
-    filter += fmt.Sprintf(" LIMIT %d OFFSET %d", req.Limit, req.Offset)
+	if count == 0 {
+		return nil, errors.New(("hech qanday ma'lumot topilmadi"))
+	}
 
-    // Select orders with the applied filter
-    rows, err := q.db.Query(ctx, selectOrderFilter+filter, args...)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	// Pagination (LIMIT and OFFSET)
+	filter += fmt.Sprintf(" LIMIT %d OFFSET %d", req.Limit, req.Offset)
+	// Select orders with the applied filter
+	rows, err := q.db.Query(ctx, selectOrderFilter+filter, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var orders []*pb.Order
-    for rows.Next() {
-        var order pb.Order
-        var client pb.Client
-        var status sql.NullString // status uchun sql.NullString dan foydalanamiz
+	var orders []*pb.Order
+	for rows.Next() {
+		var order pb.Order
+		var client pb.Client
+		var status sql.NullString // status uchun sql.NullString dan foydalanamiz
 
-        err := rows.Scan(&order.Id, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &status)
-        if err != nil {
-            return nil, err
-        }
+		err := rows.Scan(&order.Id, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &status)
+		if err != nil {
+			return nil, err
+		}
 
-        // Agar status NULL bo'lsa, default qiymatni beramiz
-        if status.Valid {
-            order.Status = status.String
-        } else {
-            order.Status = "" // yoki boshqa default qiymat
-        }
+		// Agar status NULL bo'lsa, default qiymatni beramiz
+		if status.Valid {
+			order.Status = status.String
+		} else {
+			order.Status = "" // yoki boshqa default qiymat
+		}
 
-        // Assign the client info to the order
-        order.Client = &client
-        orders = append(orders, &order)
-    }
+		// Assign the client info to the order
+		order.Client = &client
+		orders = append(orders, &order)
+	}
 
-    // Return the response
-    return &pb.GetOrdersResp{
-        Orders:     orders,
-        TotalCount: count,
-        Limit:      req.Limit,
-        Offset:     req.Offset,
-    }, nil
+	// Return the response
+	return &pb.GetOrdersResp{
+		Orders:     orders,
+		TotalCount: count,
+		Limit:      req.Limit,
+		Offset:     req.Offset,
+	}, nil
 }
-

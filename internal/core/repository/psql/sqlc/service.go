@@ -3,6 +3,7 @@ package sqlc
 import (
 	pb "carpet/genproto/pure_wash"
 	"context"
+
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -135,9 +136,8 @@ LIMIT $1 OFFSET $2
 
 func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
 	var (
-		responses pb.Service
-		err       error
-		resp      pb.ServicesResponse
+		err  error
+		resp pb.ServicesResponse
 	)
 
 	rows, err := q.db.Query(ctx, SelectServicesQuery, req.Limit, req.Page)
@@ -147,6 +147,7 @@ func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*
 	defer rows.Close()
 
 	for rows.Next() {
+		var responses pb.Service
 		if err = rows.Scan(
 			&responses.Id,
 			&responses.Tariffs,
