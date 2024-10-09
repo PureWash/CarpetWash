@@ -133,8 +133,9 @@ func (s *Order) GetAllOrderForCurier(ctx context.Context, req *pb.GetAllOrdersRe
 	s.log.Info("Success Order filter service")
 	return resp, err
 }
-func (s *Service) UpdateOrderStatus(ctx context.Context, req *pb.StatusOrderReq) (*pb.PrimaryKey, error) {
-	res, err := s.storage.UpdateOrderStatus(ctx, req)
+
+func (s *Order) UpdateOrderStatus(ctx context.Context, in *pb.StatusOrderReq) (*pb.PrimaryKey, error) {
+	res, err := s.storage.UpdateOrderStatus(ctx, in)
 	if err != nil {
 		s.log.Error("Select service error", logger.Error(err))
 		return nil, err

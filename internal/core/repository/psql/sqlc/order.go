@@ -365,16 +365,19 @@ func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*p
 }
 
 var updateOrderStatus = `
- UPDATE
-    SET  status=$1
- FROM
-  orders  WHERE id=$2
- RETURNING id;
+	UPDATE orders
+	SET
+		status = $1,
+		updated_at = now()
+	WHERE
+		id = $2
+	RETURNING 
+		id
 `
 
 func (q *Queries) UpdateOrderStatus(ctx context.Context, req *pb.StatusOrderReq) (*pb.PrimaryKey, error) {
  var ID string
- err := q.db.QueryRow(ctx, updateOrderStatus, req.Id, req.Status).Scan(&ID)
+ err := q.db.QueryRow(ctx, updateOrderStatus, req.Status, req.Id).Scan(&ID)
  if err != nil {
   return nil, err
  }
