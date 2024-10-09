@@ -134,6 +134,14 @@ FROM
 LIMIT $1 OFFSET $2
 `
 
+const countSQuery = `--name SelectServices
+SELECT 
+    COUNT(*)
+FROM 
+    services
+LIMIT $1 OFFSET $2
+`
+
 func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
 	var (
 		err  error
@@ -161,11 +169,20 @@ func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*
 		resp.Services = append(resp.Services, &responses)
 	}
 
+	var count int64
+	err = q.db.QueryRow(ctx, countSQuery).Scan(&count)
+	if err != nil {
+		return nil, err
+	}
+
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
 	return &pb.ServicesResponse{
-		Services: resp.Services,
+		Services:   resp.Services,
+		TotalCount: count,
+		Limit:      req.Limit,
+		Page:       req.Page,
 	}, nil
 }
