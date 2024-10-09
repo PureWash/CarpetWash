@@ -139,7 +139,7 @@ SELECT
     COUNT(*)
 FROM 
     services
-LIMIT $1 OFFSET $2
+
 `
 
 func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
