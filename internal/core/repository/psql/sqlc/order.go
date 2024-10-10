@@ -195,8 +195,8 @@ func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.GetO
 
 var selectOrders = `
 	SELECT
-		c.id
 		o.id,
+		c.id,
 		full_name,
 		phone_number,
 		latitude,
@@ -265,7 +265,7 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 var selectOrderFilter = `
 SELECT
     o.id,
-	c.id
+	c.id,
     c.full_name,
     c.phone_number,
     c.latitude,
