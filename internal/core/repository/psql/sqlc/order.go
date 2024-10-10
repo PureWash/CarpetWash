@@ -195,6 +195,7 @@ func (q *Queries) SelectOrder(ctx context.Context, req *pb.PrimaryKey) (*pb.GetO
 
 var selectOrders = `
 	SELECT
+		c.id
 		o.id,
 		full_name,
 		phone_number,
@@ -207,7 +208,7 @@ var selectOrders = `
 		ON o.client_id = c.id
 	WHERE
 		o.deleted_at = '1' AND
-		status = 'tayyor'
+		status = 'READY'
 	OFFSET $1 LIMIT $2;
 `
 
@@ -219,7 +220,7 @@ var countQuery = `
 	INNER JOIN clients AS c
 		ON o.client_id = c.id
 	WHERE
-		o.deleted_at = '1' AND status = 'tayyor';
+		o.deleted_at = '1' AND status = 'READY';
 `
 
 func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb.GetOrdersResp, error) {
@@ -244,7 +245,7 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 		var order pb.Order
 		var client pb.Client
 
-		err := rows.Scan(&order.Id, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &order.Status)
+		err := rows.Scan(&order.Id, client.ClientId, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &order.Status)
 		if err != nil {
 			return nil, err
 		}
@@ -264,6 +265,7 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 var selectOrderFilter = `
 SELECT
     o.id,
+	c.id
     c.full_name,
     c.phone_number,
     c.latitude,
@@ -338,7 +340,7 @@ func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*p
 		var client pb.Client
 		var status sql.NullString // status uchun sql.NullString dan foydalanamiz
 
-		err := rows.Scan(&order.Id, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &status)
+		err := rows.Scan(&order.Id, client.ClientId, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &status)
 		if err != nil {
 			return nil, err
 		}
