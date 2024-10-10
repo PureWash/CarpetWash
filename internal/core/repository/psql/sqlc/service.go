@@ -139,7 +139,6 @@ SELECT
     COUNT(*)
 FROM 
     services
-
 `
 
 func (q *Queries) SelectServices(ctx context.Context, req *pb.GetListRequest) (*pb.ServicesResponse, error) {
