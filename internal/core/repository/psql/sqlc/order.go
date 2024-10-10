@@ -245,7 +245,15 @@ func (q *Queries) SelectOrders(ctx context.Context, req *pb.GetListRequest) (*pb
 		var order pb.Order
 		var client pb.Client
 
-		err := rows.Scan(&order.Id, client.ClientId, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &order.Status)
+		err := rows.Scan(
+			&order.Id, 
+			&client.ClientId, 
+			&client.FullName, 
+			&client.PhoneNumber, 
+			&client.Latitude, 
+			&client.Longitude, 
+			&order.Status,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -340,7 +348,15 @@ func (q *Queries) GetAllOrders(ctx context.Context, req *pb.GetAllOrdersReq) (*p
 		var client pb.Client
 		var status sql.NullString // status uchun sql.NullString dan foydalanamiz
 
-		err := rows.Scan(&order.Id, client.ClientId, &client.FullName, &client.PhoneNumber, &client.Latitude, &client.Longitude, &status)
+		err := rows.Scan(
+			&order.Id, 
+			&client.ClientId, 
+			&client.FullName, 
+			&client.PhoneNumber, 
+			&client.Latitude, 
+			&client.Longitude, 
+			&status,
+		)
 		if err != nil {
 			return nil, err
 		}
